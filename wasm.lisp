@@ -1,5 +1,7 @@
+(in-package #:cl-wasm-runtime)
+
 (cffi:define-foreign-library libwasmer
-  (:darwin (:or "/shared/libwasmer/lib/libwasmer.dylib")))
+  (:darwin (:or "shared/libwasmer/lib/libwasmer.dylib")))
 
 (cffi:use-foreign-library libwasmer)
 
@@ -11,9 +13,7 @@
 
   (defun make-object-type-parser-sym (name)
     (alexandria:symbolicate '%wasm- name '-type))
-  
-  (defun make-type-ptr-sym (name)
-    (alexandria:symbolicate '%wasm- name '-type-ptr))
+ 
  
   (defun make-cfun-name (name cfunc-name-suffix)
     (let* ((cfunc-name (format nil
@@ -94,15 +94,14 @@
   (let* ((type-sym (make-object-type-parser-sym name))
 	 (delete-name (make-cfun-name name "delete")))
     `(progn
-       (cffi:defctype ,type-ptr-sym :pointer)
+       (define-wasm-object-type ,name)
        (cffi:defcfun ,delete-name :void
-	 (,name ,type-ptr-sym)))))
+	 (,name ,type-sym)))))
 
 (defmacro define-wasm-type (name)
-  (let ((type-sym (make-type-ptr-sym name))
+  (let ((type-sym (make-object-type-parser-sym name))
 	(copy-name (make-cfun-name name "copy")))
     `(progn
-       (define-wasm-object-type ,name)
        (define-wasm-own ,name)
        (define-wasm-vec ,name)
        (cffi:defcfun ,copy-name ,type-sym
@@ -162,6 +161,7 @@
 
 (define-wasm-vec byte)
 
+(define-wasm-object-class byte)
 (define-wasm-vec-class byte)
 
 (cffi:defctype %wasm-message-struct (:struct %wasm-byte-vec-struct)) ; Null terminated
@@ -187,7 +187,6 @@
 
 ;;; Configuration
 
-(define-wasm-object-type config)
 (define-wasm-own config)
 
 (cffi:defcfun ("wasm_config_new" %wasm-config-new) :pointer)
@@ -199,7 +198,6 @@
 
 ;;; Engine
 
-(define-wasm-object-type engine)
 (define-wasm-own engine)
 
 (cffi:defcfun ("wasm_engine_new" %wasm-engine-new) :pointer)
@@ -279,15 +277,15 @@
 
 (define-wasm-type functype)
 
-(cffi:defcfun ("wasm_functype_new" %wasm-functype-new) %wasm-functype-type-ptr
-  (params %wasm-valtype-vec-type-ptr)
-  (result %wasm-valtype-vec-type-ptr))
+(cffi:defcfun ("wasm_functype_new" %wasm-functype-new) :pointer
+  (params %wasm-valtype-vec-type)
+  (result %wasm-valtype-vec-type))
 
-(cffi:defcfun ("wasm_functype_params" %wasm-functype-params) %wasm-valtype-vec-type-ptr
-  (functype %wasm-functype-type-ptr))
+(cffi:defcfun ("wasm_functype_params" %wasm-functype-params) :pointer
+  (functype %wasm-functype-type))
 
-(cffi:defcfun ("wasm_functype_results" %wasm-functype-results) %wasm-valtype-vec-type-ptr
-  (functype %wasm-functype-type-ptr))
+(cffi:defcfun ("wasm_functype_results" %wasm-functype-results) :pointer
+  (functype %wasm-functype-type))
 
 (define-wasm-object-class functype)
 
@@ -344,7 +342,7 @@
 (define-wasm-object-class globaltype)
 
 (defun make-wasm-tabletype (valtype limits)
-  (make-instance 'wasm-globaltype :pointer (%wasm-globabltype-new valtype limits)))
+  (make-instance 'wasm-globaltype :pointer (%wasm-tabletype-new valtype limits)))
 
 ;;; Memory Types
 (define-wasm-type memorytype)
@@ -375,7 +373,7 @@
 (cffi:defcfun ("wasm_externtype_kind" wasm-externtype-kind) %wasm-extern-kind-type
   (externtype %wasm-externtype-type))
 
-(defmacro define-externtype-conversion (type-name)
+(defmacro define-wasm-externtype-conversion (type-name)
   (let* ((type-sym (make-object-type-parser-sym type-name))
 	 (to-externtype-name (make-cfun-name type-name "as_externtype"))
 	 (from-externtype-name (list (format nil "wasm_externtype_as_~a" (string-downcase (string type-name)))
@@ -386,10 +384,10 @@
        (cffi:defcfun ,from-externtype-name :pointer
 	 (externtype %wasm-externtype-type)))))
 
-(define-externtype-conversion functype)
-(define-externtype-conversion globaltype)
-(define-externtype-conversion tabletype)
-(define-externtype-conversion memorytype)
+(define-wasm-externtype-conversion functype)
+(define-wasm-externtype-conversion globaltype)
+(define-wasm-externtype-conversion tabletype)
+(define-wasm-externtype-conversion memorytype)
 
 (define-wasm-object-class externtype)
 
@@ -502,6 +500,8 @@
 
 (define-wasm-ref-base ref)
 
+(define-wasm-object-class ref)
+
 ;;; Values
 
 (cffi:defcunion %wasm-val-union
@@ -574,7 +574,6 @@
 
 ;;; Frames
 
-(define-wasm-object-type frame)
 (define-wasm-own frame)
 (define-wasm-vec frame)
 
@@ -593,7 +592,7 @@
 (cffi:defcfun ("wasm_frame_module_offset" %wasm-frame-module-offset) %size-type
   (frame %wasm-frame-type))
 
-(define-wasm-object-class val)
+(define-wasm-object-class frame)
 (define-wasm-vec-class frame)
 
 ;;; Traps
@@ -615,12 +614,16 @@
   (trap %wasm-trap-type)
   (out %wasm-frame-vec-type))
 
+(define-wasm-object-class trap)
+
 ;;; Foreign Objects
 
 (define-wasm-ref foreign)
 
 (cffi:defcfun ("wasm_foreign_new" %wasm-foreign-new) :pointer
   (store %wasm-store-type))
+
+(define-wasm-object-class foreign)
 
 ;;; Modules
 
@@ -684,8 +687,8 @@
 
 (cffi:defcfun ("wasm_func_call" %wasm-func-call) :pointer
   (func %wasm-func-type)
-  (args (:pointer (:struct %wasm-val-vec-type)))
-  (results (:pointer (:struct %wasm-val-vec-type))))
+  (args %wasm-val-vec-type)
+  (results %wasm-val-vec-type))
 
 (define-wasm-object-class func)
 
@@ -727,9 +730,13 @@
 
 (define-wasm-ref table)
 
+(define-wasm-object-class table)
+
 ;;; Memory Instances
 
 (define-wasm-ref memory)
+
+(define-wasm-object-class memory)
 
 ;;; Externals
 
@@ -787,7 +794,21 @@
   (wat :string)
   (out %wasm-byte-vec-type))
 
-;;; High level Interface
+(defun wat-to-wasm (store wat-str)
+  (cffi:with-foreign-string (wat-c-str wat-str)
+    (cffi:with-foreign-objects ((wat '%wasm-byte-vec-type)
+				(wasm-bytes '%wasm-byte-vec-type))
+      (unwind-protect
+	   (progn
+	     (%wasm-byte-vec-new wat
+				 (cffi:foreign-funcall "strlen" :string wat-c-str :int)
+				 wat-c-str)
+	     (%wat-to-wasm wat wasm-bytes)
+	     (make-wasm-module store wasm-bytes))
+	(%wasm-byte-vec-delete wat)
+	(%wasm-byte-vec-delete wasm-bytes)))))
+
+;;; High-level interface
 
 (defun read-wasm-module (path)
   (with-open-file (in path :element-type '(unsigned-byte 8))
@@ -798,7 +819,7 @@
 (defun binary-to-wasm-module (store bin-array)
   (let ((size (length bin-array)))
     (cffi:with-foreign-objects ((wasm-byte-arr '%wasm-byte-type size)
-				(wasm-bytes '%wasm-byte-vec-type-ptr))
+				(wasm-bytes '(:struct %wasm-byte-vec-struct)))
       (unwind-protect
 	   (progn
 	     (loop for i below size
@@ -808,17 +829,4 @@
 	     (make-wasm-module store wasm-bytes))
 	(%wasm-byte-vec-delete wasm-bytes)))))
 
-(defun wat-to-wasm-module (store wat-str)
-  (cffi:with-foreign-string (wat-c-str wat-str)
-    (cffi:with-foreign-objects ((wat '%wasm-byte-vec-type-ptr)
-				(wasm-bytes '%wasm-byte-vec-type-ptr))
-      (unwind-protect
-	   (progn
-	     (%wasm-byte-vec-new wat
-				 (cffi:foreign-funcall "strlen" :string wat-c-str :int)
-				 wat-c-str)
-	     (%wat-to-wasm wat wasm-bytes)
-	     (make-wasm-module store wasm-bytes))
-	(%wasm-byte-vec-delete wat)
-	(%wasm-byte-vec-delete wasm-bytes)))))
 

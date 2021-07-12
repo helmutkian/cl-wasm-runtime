@@ -1,3 +1,5 @@
+(in-package #:cl-wasm-runtime)
+
 (defgeneric dispose (object))
 (defgeneric enable-garbage-collection (object))
 (defgeneric wasm-delete (object))
@@ -52,9 +54,7 @@
     (mapc-weak #'dispose (car finalizer-data))
     ;; Free WASM object
     (unless (null? pointer)
-      (handler-case (funcall delete-function pointer)
-	(t (c)
-	  (trivial-backtrace:print-backtrace c))))))
+      (funcall delete-function pointer))))
 
 (defmethod dispose ((object wasm-object))
   ;; Sever from parent
