@@ -2,7 +2,9 @@
   :depends-on ("cffi"
 	       "trivial-garbage"
 	       "alexandria"
-	       "split-sequence")
+	       "split-sequence"
+	       "fast-io"
+	       "babel")
   :components ((:file "package")
 	       (:file "wasm-object"
 		      :depends-on ("package"))

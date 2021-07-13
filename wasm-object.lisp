@@ -27,9 +27,11 @@
   (:actual-type :pointer)
   (:simple-parser %wasm-object-type))
 
+#|
 (defmethod initialize-instance :after ((instance wasm-object) &key)
   (enable-garbage-collection instance))
-				       
+|#
+
 (defmethod cffi:translate-to-foreign ((value wasm-object) (type wasm-object-type))
   (pointer value))
 
@@ -65,7 +67,7 @@
 		      (delete-function object))
     (setf (pointer object) nil)))
 
-(defmethod enable-garbage-collection ((object wasm-object))
+(defmethod enable-gc ((object wasm-object))
   (let ((pointer (slot-value object 'pointer))) ; By-pass generic functions
     (format t "ENABLE-GARBACE-COLLECTION ~a~%" pointer)
     (unless (null? pointer)
