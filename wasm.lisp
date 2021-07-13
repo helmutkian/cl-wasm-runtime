@@ -789,7 +789,8 @@
     (enable-gc exports)
     (%wasm-module-exports module exports)
     (setf (slot-value exports 'exports-list)
-	  (wasm-exporttype-vec-to-list exports))))
+	  (wasm-exporttype-vec-to-list exports))
+    exports))
 
 (define-wasm-object-class module ()
   ((exports :reader exports)))
@@ -801,7 +802,8 @@
 				:parent store)))
     (enable-gc module)
     (setf (slot-value module 'exports)
-	  (make-wasm-module-exports module))))
+	  (make-wasm-module-exports module))
+    module))
    
 ;;; Function Instances
 
