@@ -481,7 +481,7 @@
 
 (define-wasm-object-class externtype ()
   ((kind :initarg :kind
-	 :reader kind)))
+	 :reader wasm-externtype-kind)))
 
 (defun wrap-wasm-externtype (pointer &key owned-by)
   (enable-gc (make-instance 'wasm-externtype
@@ -526,10 +526,8 @@
   (exporttype %wasm-exporttype-type))
 
 (define-wasm-object-class exporttype ()
-  ((name :initarg :name
-	 :accessor name)
-   (externtype :initarg :externtype
-	       :accessor externtype)))
+  ((name :reader wasm-exporttype-name)
+   (externtype :reader wasm-exporttype-externtype)))
 
 (defun make-wasm-exporttype (name externtype &key owned-by)
   (enable-gc (make-instance 'wasm-exporttype
@@ -539,13 +537,16 @@
 			    :parent owned-by)))
 
 (defun wrap-wasm-exporttype (pointer &key owned-by)
-  (let ((name (wasm-byte-vec-to-string (%wasm-exporttype-name pointer)))
-	(externtype (wrap-wasm-externtype (%wasm-exporttype-type pointer))))
-    (enable-gc (make-instance 'wasm-exporttype
-			      :pointer pointer
-			      :parent owned-by
-			      :name name
-			      :externtype externtype))))
+  (let ((exporttype (make-instance 'wasm-exporttype
+				    :pointer pointer
+				    :parent owned-by)))
+    (enable-gc exporttype)
+    (setf (slot-value exporttype 'name)
+	  (wasm-byte-vec-to-string (%wasm-exporttype-name pointer))
+	  (slot-value exporttype 'externtype)
+	  (wrap-wasm-externtype (%wasm-exporttype-type pointer)
+				:owned-by exporttype))
+    exporttype))
 
 (define-wasm-vec-class exporttype)
 
@@ -779,7 +780,7 @@
   (binary %wasm-byte-vec-type))
 
 (defclass wasm-module-exports (wasm-exporttype-vec)
-  ((exports-list :reader exports-list)))
+  ((exports-list)))
 
 (defun make-wasm-module-exports (module)
   (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-exporttype-vec-struct)))
@@ -793,7 +794,7 @@
     exports))
 
 (define-wasm-object-class module ()
-  ((exports :reader exports)))
+  ((exports)))
 
 (defun make-wasm-module (store binary)
   (let* ((pointer (%wasm-module-new store binary))
@@ -804,6 +805,10 @@
     (setf (slot-value module 'exports)
 	  (make-wasm-module-exports module))
     module))
+
+(defun wasm-module-exports (module)
+  (slot-value (slot-value module 'exports)
+	      'exports-list))
    
 ;;; Function Instances
 
