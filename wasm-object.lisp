@@ -21,8 +21,8 @@
 	  :initform nil
 	  :documentation "Owner of this WASM object. Calling the DELETE-FUNCTION on the owner will release this data, and therefore objects that are 'owned' should never be deleted directly.")
    (finalizer-data :accessor finalizer-data
-		   :initform (list :owned?? nil :disposed?? nil :dependencies nil)
-		   :documentation "Plist of data used to finalize the WASM object. :OWNED?? is a T/NIL flag indicating whether another object 'owns' this object, and if not NIL, then this object should not be disposed. :DISPOSED?? is a T/NIL flag to determine if the object has been disposed of already. :DEPENDENCIES are WASM objects that should be disposed of before this one.")))
+		   :initform (list :owned? nil :disposed? nil :dependencies nil)
+		   :documentation "Plist of data used to finalize the WASM object. :OWNED? is a T/NIL flag indicating whether another object 'owns' this object, and if not NIL, then this object should not be disposed. :DISPOSED? is a T/NIL flag to determine if the object has been disposed of already. :DEPENDENCIES are WASM objects that should be disposed of before this one.")))
 
 (defgeneric owner (object))
 
