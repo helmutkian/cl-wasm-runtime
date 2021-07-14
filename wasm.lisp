@@ -96,6 +96,17 @@
 (defun wasm-vec-size (pointer type)
   (cffi:foreign-slot-value pointer type 'size))
 
+(defun wasm-vec-aref (pointer vec-type offset)
+  (cffi:mem-aref (cffi:foreign-slot-value pointer vec-type 'data)
+		 :pointer
+		 offset))
+
+(defun wasm-vec-aptr (pointer vec-type offset)
+  (cffi:mem-aptr (cffi:foreign-slot-value pointer vec-type 'data)
+		 :pointer
+		 offset))
+
+
 (defmacro do-wasm-vec (((elm-var elm-type &optional (index-var (gensym))) vec-pointer vec-type) &body body)
   (alexandria:with-gensyms (data size)
     `(let ((,data (cffi:foreign-slot-value ,vec-pointer ,vec-type 'data))
@@ -136,8 +147,15 @@
 
 ;;; Wasm vector high level interface
 
-(defun make-wasm-vec-instance (class-name type)
-  (enable-gc (make-instance class-name :pointer (cffi:foreign-alloc type))))
+(defun make-wasm-vec-instance (class-name type &key owned-by)
+  (enable-gc (make-instance class-name
+			    :pointer (cffi:foreign-alloc type)
+			    :parent owned-by)))
+
+(defun wrap-wasm-vec (class-name pointer &key owned-by)
+  (enable-gc (make-instance class-name
+			    :pointer pointer
+			    :parent owned-by)))
 
 (defmacro define-wasm-vec-class (name)
   (let* ((vec-name (make-symbol (format nil "~A-VEC" name)))
@@ -152,24 +170,35 @@
 	 (copy-name (second (make-cfun-name vec-name "copy"))))
     `(progn
        (define-wasm-object-class ,vec-name)
-       (defun ,make-empty-name ()
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym))))
+       (defun ,make-empty-name (&key owned-by)
+	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owned-by owned-by)))
 	   (,new-empty-name vec)
 	   vec))
-       (defun ,make-uninitialized-name (size)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym))))
+       (defun ,make-uninitialized-name (size &key owned-by)
+	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owned-by owned-by)))
 	   (,new-uninitialized-name vec size)
 	   vec))
-       (defun ,make-name (size init-data)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym))))
+       (defun ,make-name (size init-data &key owned-by)
+	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owned-by owned-by)))
 	   (,new-name vec size init-data)
 	   vec))
-       (defun ,(alexandria:symbolicate 'wasm- vec-name '-copy) (src)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym))))
+       (defun ,(alexandria:symbolicate 'wrap-wasm- vec-name) (pointer &key owned-by)
+	 (wrap-wasm-vec ',class-name pointer :owned-by owned-by))
+       (defun ,(alexandria:symbolicate 'wasm- vec-name '-copy) (src &key owned-by)
+	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owned-by owned-by)))
 	   (,copy-name vec src)
 	   vec))
        (defun ,(alexandria:symbolicate 'wasm- vec-name '-size) (vec)
 	 (wasm-vec-size (pointer vec) '(:struct ,struct-type-sym))))))
+
+(defun wasm-vec-to-list (vec vec-type wrap-function &key owned-by)
+  (let ((list nil))
+    (do-wasm-vec ((elm-pointer :pointer)
+		  (if (cffi:pointerp vec) vec (pointer vec))
+		  vec-type)
+      (push (funcall wrap-function elm-pointer :owned-by owned-by)
+	    list))
+    (nreverse list)))
 			   
 ;;; Byte vectors
 
@@ -382,7 +411,20 @@
       (valtype-vec-new results result-list)
       (enable-gc (make-instance 'wasm-functype
 				:pointer (%wasm-functype-new params results))))))
-  
+
+(defun wrap-wasm-functype (pointer &key owned-by)
+  (enable-gc (make-instance 'wasm-functype
+			    :pointer pointer
+			    :parent owned-by)))
+
+(defun wasm-functype-params (functype &key owned-by)
+  (wrap-wasm-valtype-vec (%wasm-functype-params functype)
+			 :owned-by owned-by))
+
+(defun wasm-functype-results (functype &key owned-by)
+  (wrap-wasm-valtype-vec (%wasm-functype-results functype)
+			 :owned-by owned-by))
+
 ;;; Global Types
 
 (define-wasm-type globaltype)
@@ -551,12 +593,10 @@
 (define-wasm-vec-class exporttype)
 
 (defun wasm-exporttype-vec-to-list (exporttype-vec &key owned-by)
-  (let ((exporttype-list nil))
-    (do-wasm-vec ((exporttype-pointer :pointer) (pointer exporttype-vec) '(:struct %wasm-exporttype-vec-struct))
-      (push (wrap-wasm-exporttype exporttype-pointer
-				  :owned-by (or owned-by exporttype-vec))
-	    exporttype-list))
-    exporttype-list))
+  (wasm-vec-to-list exporttype-vec
+		    '(:struct %wasm-exporttype-vec-struct)
+		    #'wrap-wasm-exporttype
+		    :owned-by (or owned-by exporttype-vec)))
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Runtime Objects
@@ -642,6 +682,7 @@
   (of (:union %wasm-val-union)))
 
 (define-wasm-object-type val)
+(define-wasm-vec val)
 
 (cffi:defcfun ("wasm_val_delete" %wasm-val-delete) :void
   (v %wasm-val-type))
@@ -649,15 +690,6 @@
 (cffi:defcfun ("wasm_val_copy" %wasm-val-copy) :void
   (out %wasm-val-type)
   (in %wasm-val-type))
-
-(defclass wasm-val (wasm-object)
-  ((delete-function :initform #'%wasm-val-delete)
-   (kind :initarg :kind
-	 :accessor kind
-	 :initform nil)
-   (val :initarg :val
-	:accessor val
-	:initform nil)))
 
 (defun wasm-val-type-kind-of (kind-key)
   (ecase kind-key
@@ -668,19 +700,14 @@
     (:wasm-any-ref 'ref)
     (:wasm-func-ref 'ref)))
 
-(defmethod cffi:translate-from-foreign (pointer (type wasm-val-type))
-  (let ((kind-key (cffi:foreign-enum-keyword '%wasm-val-kind-enum
-					     (cffi:foreign-slot-value pointer
-								      '(:struct %wasm-val-struct)
-								      'kind))))
-    (enable-gc (make-instance 'wasm-val
-			      :pointer pointer
-			      :kind kind-key
-			      :val (cffi:foreign-slot-value (cffi:foreign-slot-value pointer
-										     '(:struct %wasm-val-struct)
-										     'of)
-							    '(:union %wasm-val-union)
-							    (wasm-val-type-kind-of kind-key))))))
+(defun wasm-val-type-value (pointer)
+  (let* ((kind (cffi:foreign-slot-value pointer '(:struct %wasm-val-struct) 'kind))
+	 (kind-key (cffi:foreign-enum-keyword '%wasm-val-kind-enum kind)))
+    (cffi:foreign-slot-value (cffi:foreign-slot-value pointer
+						      '(:struct %wasm-val-struct)
+						      'of)
+			     '(:union %wasm-val-union)
+			     (wasm-val-type-kind-of kind-key))))
 
 (defun wasm-val-init (wasm-val wasm-val-kind-key val)
   (setf (cffi:foreign-slot-value wasm-val '(:struct %wasm-val-struct) 'kind)
@@ -692,12 +719,72 @@
 				 (wasm-val-type-kind-of wasm-val-kind-key))
 	val))
 
-(define-wasm-vec val)
-
 (define-wasm-object-class val)
+
+(defun make-wasm-val (kind-key lisp-val &key owned-by)
+  (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-val-struct)))
+	 (wasm-val (enable-gc (make-instance 'wasm-val
+					     :pointer pointer
+					     :parent owned-by))))
+    (wasm-val-init pointer kind-key lisp-val)
+    wasm-val))
+
+(defun wasm-val-kind (wasm-val)
+  (unless (null? (pointer wasm-val))
+    (wasm-valkind-to-key (cffi:foreign-slot-value (pointer wasm-val)
+						  '(:struct %wasm-val-struct)
+						  'kind))))
+
+(defun wasm-val-value (wasm-val)
+  (unless (null? (pointer wasm-val))
+    (let ((kind-key (wasm-val-kind wasm-val)))
+      (cffi:foreign-slot-value (cffi:foreign-slot-value (pointer wasm-val)
+							'(:struct %wasm-val-struct)
+							'of)
+			       '(:union %wasm-val-union)
+			       (wasm-val-type-kind-of kind-key)))))
+
+(defun wrap-wasm-val (pointer &key owned-by)
+  (enable-gc (make-instance 'wasm-val
+			    :pointer pointer
+			    :parent owned-by)))
+			      
+
+;; TODO: Translate more types
+(defun lisp-to-wasm-valkind (lisp-val)
+  (etypecase lisp-val
+    ;; TODO: Translate CL floats properly
+    (single-float :wasm-f32)
+    (double-float :wasm-f64)
+    ((unsigned-byte 32) :wasm-i32)
+    ((unsigned-byte 64) :wasm-i64)))
+
+(defun lisp-to-wasm-val (lisp-val &key owned-by)
+  (make-wasm-val (lisp-to-wasm-valkind lisp-val)
+		 lisp-val
+		 :owned-by owned-by))
+  
+
 (define-wasm-vec-class val)
 
+(defun wasm-val-vec-to-list (val-vec &key owned-by)
+  (wasm-vec-to-list val-vec
+		    '(:struct %wasm-val-vec-struct)
+		    #'wrap-wasm-val
+		    :owned-by owned-by))
 
+(defun list-to-wasm-val-vec (list &key owned-by)
+  (let* ((size (length list)))
+    (cffi:with-foreign-pointer (vals size)
+      (loop for val in list
+	    for i from 0
+	    for val-pointer = (cond
+				((typep val 'wasm-object) (pointer val))
+				((cffi:pointerp val) val)
+				(t (pointer (lisp-to-wasm-val val :owned-by owned-by))))
+	    do (setf (cffi:mem-aref vals :pointer i) val-pointer))
+      (enable-gc (make-wasm-val-vec size vals :owned-by owned-by)))))
+						  
 ;;; Frames
 
 (define-wasm-own frame)
@@ -787,8 +874,8 @@
 	 (exports (make-instance 'wasm-module-exports
 				 :pointer pointer
 				 :parent module)))
-    (enable-gc exports)
     (%wasm-module-exports module exports)
+    (enable-gc exports)
     (setf (slot-value exports 'exports-list)
 	  (wasm-exporttype-vec-to-list exports))
     exports))
@@ -848,6 +935,47 @@
 					 (%wasm-func-new store functype callback))
 			    :parent store)))
 
+(defun wrap-wasm-func (pointer &key owned-by)
+  (enable-gc (make-instance 'wasm-func
+			    :pointer pointer
+			    :parent owned-by)))
+
+(defun wasm-func-type (func &key owned-by)
+  (wrap-wasm-functype (%wasm-func-type func) :owned-by owned-by))
+
+(defun wasm-funcall (func &rest received-args)
+  (let* ((functype (wasm-func-type func))
+	 (num-received-args (length received-args))
+	 (params (wasm-functype-params functype))
+	 (num-params (wasm-valtype-vec-size params))
+	 (num-results (wasm-valtype-vec-size (wasm-functype-results functype))))
+    (when (not (= num-received-args num-params))
+      (error (format nil "WASM function called with ~a arguments, but wants exactly ~a" num-received-args num-params)))
+    (cffi:with-foreign-objects ((arg-arr '(:struct %wasm-val-struct) num-params)
+				(args '(:struct %wasm-val-vec-struct))
+				(results '(:struct %wasm-val-vec-struct)))
+      
+      (loop for arg in received-args
+	    for i from 0
+	    do (wasm-val-init (cffi:mem-aptr arg-arr '(:struct %wasm-val-struct))
+			      (cffi:foreign-enum-keyword
+			       '%wasm-val-kind-enum
+			       (%wasm-valtype-kind (wasm-vec-aref (pointer params)
+								  '(:struct %wasm-valtype-vec-struct)
+								  i)))
+			      arg))
+      (unwind-protect
+	   (progn
+	     (%wasm-val-vec-new args num-params arg-arr)
+	     (%wasm-val-vec-new-uninitialized results num-results)
+	     (%wasm-func-call func args results)
+	     (loop for i below num-results
+		   collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
+		     into result-values
+		   finally (return (values-list result-values))))
+	(%wasm-val-vec-delete args)
+	(%wasm-val-vec-delete results)))))
+      
 ;;; Global Instances
 
 (define-wasm-ref global)
@@ -914,8 +1042,30 @@
 (define-wasm-extern-conversion table)
 (define-wasm-extern-conversion memory)
 
-(define-wasm-object-class extern)
+(define-wasm-object-class extern ()
+  ((kind :reader wasm-extern-kind)
+   (externtype :reader wasm-extern-type)))
+
+(defun wrap-wasm-extern (pointer &key owned-by)
+  (let ((extern (enable-gc (make-instance 'wasm-extern :pointer pointer :parent owned-by))))
+    (setf (slot-value extern 'kind)
+	  (wasm-externkind-to-key (%wasm-extern-kind pointer))
+	  (slot-value extern 'externtype)
+	  (wrap-wasm-externtype (%wasm-extern-type pointer) :owned-by extern))
+    extern))
+
+(defun wasm-extern-as-func (extern)
+  (let ((func-pointer (%wasm-extern-as-func extern)))
+    (unless (null? func-pointer)
+      (wrap-wasm-func func-pointer :owned-by extern))))
+
 (define-wasm-vec-class extern)
+
+(defun wasm-extern-vec-to-list (extern-vec &key owned-by)
+  (wasm-vec-to-list extern-vec
+		    '(:struct %wasm-extern-vec-struct)
+		    #'wrap-wasm-extern
+		    :owned-by (or owned-by extern-vec)))
 
 ;;; Module Instances
 
@@ -931,33 +1081,57 @@
   (instance %wasm-instance-type)
   (out %wasm-extern-vec-type))
 
-(define-wasm-object-class instance)
+(defclass wasm-imports (wasm-extern-vec)
+  ())
 
-(defun make-wasm-instance (store module imports &optional traps)
-  (enable-gc (make-instance 'wasm-instance
-			    :pointer (%wasm-instance-new store
-							 module
-							 imports
-							 (if (null? traps) (cffi:null-pointer) traps))
-			    :parent store)))
+(defun make-wasm-imports ()
+  (let ((extern-vec (make-wasm-vec-instance 'wasm-instance-exports '(:struct %wasm-extern-vec-struct))))
+    (%wasm-extern-vec-new-empty extern-vec)
+    extern-vec))
 
 (defclass wasm-instance-exports (wasm-extern-vec)
-  ((exports :initarg :exports
-	    :accessor exports)))
+  ((export-alist :reader wasm-instance-exports-to-alist)))
 
-#|(defun make-wasm-instance-exports (instance)
-  (let ((pointer (cffi:foreign-alloc '(:struct wasm-extern-vec-struct)))
-	(exports (make-instance 'wasm-instance-exports
-				:pointer pointer)
-				:parent instance)))
+(defun make-wasm-instance-exports (instance)
+  (let* ((module (wasm-instance-module instance))
+	 (pointer (cffi:foreign-alloc '(:struct %wasm-extern-vec-struct)))
+	 (exports (make-instance 'wasm-instance-exports
+				 :pointer pointer
+				 :parent instance)))
     (%wasm-instance-exports instance exports)
     (enable-gc exports)
-    (let ((num-exports (wasm-extern-vec-size exports)))
-      (loop for i below num-exports
-	    for export = (cffi:mem-aref pointer :pointer)
-	    collect |#
-      
+    (setf (slot-value exports 'export-alist)
+	  (loop for extern in (wasm-extern-vec-to-list exports)
+		for module-export in (wasm-module-exports module)
+		collect (cons (wasm-exporttype-name module-export)
+			      extern)))
+    
+    exports))
 
+(defun wasm-instance-exports-func (name exports)
+  (let* ((extern (cdr (assoc name (wasm-instance-exports-to-alist exports) :test #'string=))))
+    (unless (null? extern)
+      (wasm-extern-as-func extern))))
+
+    
+(define-wasm-object-class instance ()
+  ((module :initarg :module
+	   :reader wasm-instance-module)
+   (exports :reader wasm-instance-exports)))
+
+(defun make-wasm-instance (store module imports &optional traps)
+  (let ((instance (enable-gc
+		   (make-instance 'wasm-instance
+				  :pointer (%wasm-instance-new store
+							       module
+							       imports
+							       (if (null? traps) (cffi:null-pointer) traps))
+				  :parent store
+				  :module module))))
+    (setf (slot-value instance 'exports)
+	  (make-wasm-instance-exports instance))
+    instance))
+	
 ;;; WAT
 
 (cffi:defcfun ("wat2wasm" %wat-to-wasm) :void

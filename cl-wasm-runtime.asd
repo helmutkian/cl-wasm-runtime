@@ -1,6 +1,7 @@
 (asdf:defsystem "cl-wasm-runtime"
   :depends-on ("cffi"
 	       "trivial-garbage"
+	       "trivial-backtrace"
 	       "alexandria"
 	       "split-sequence"
 	       "fast-io"

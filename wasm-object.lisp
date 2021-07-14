@@ -4,7 +4,6 @@
 (defgeneric enable-garbage-collection (object))
 (defgeneric wasm-delete (object))
 
-
 (defclass wasm-object ()
   ((pointer :initarg :pointer
 	    :accessor pointer
@@ -27,11 +26,6 @@
   (:actual-type :pointer)
   (:simple-parser %wasm-object-type))
 
-#|
-(defmethod initialize-instance :after ((instance wasm-object) &key)
-  (enable-garbage-collection instance))
-|#
-
 (defmethod cffi:translate-to-foreign ((value wasm-object) (type wasm-object-type))
   (pointer value))
 
@@ -53,7 +47,7 @@
     ;; Mark as disposed
     (setf (car finalizer-data) nil)
     ;; Dispose dependencies
-    (mapc-weak #'dispose (car finalizer-data))
+    (mapc-weak #'dispose (cdr finalizer-data))
     ;; Free WASM object
     (unless (null? pointer)
       (funcall delete-function pointer))))
@@ -68,8 +62,9 @@
     (setf (pointer object) nil)))
 
 (defmethod enable-gc ((object wasm-object))
-  (let ((pointer (slot-value object 'pointer))) ; By-pass generic functions
-    (format t "ENABLE-GARBACE-COLLECTION ~a~%" pointer)
+  (let ((pointer (slot-value object 'pointer)) ; By-pass generic functions
+	(class (class-of object))) 
+    (format t "ENABLE-GARBACE-COLLECTION ~a ~a~%" class pointer)
     (unless (null? pointer)
       (let ((finalizer-data (finalizer-data object))
 	    (delete-function (delete-function object))
@@ -83,8 +78,13 @@
 		  (cdr (finalizer-data parent))))
 	(tg:finalize object
 		     (lambda ()
-		       (format t "FINALIZE ~a" pointer)
-		       (internal-dispose finalizer-data pointer delete-function)))))))
+		       (format t "FINALIZE ~a ~a~%" class pointer)
+		       (handler-case
+			   (internal-dispose finalizer-data pointer delete-function)
+			 (t (c)
+			   (format t "ERROR FINALIZING ~a ~a~%" class pointer)
+			   (trivial-backtrace:print-backtrace c)
+			   (error c)))))))))
 
 (defmethod wasm-delete ((object wasm-object))
     (prog1 nil
