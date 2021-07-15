@@ -25,7 +25,7 @@
 
 (defclass wasm-import-namespace ()
   ((name :initarg :name
-	 :reader namespace)
+	 :reader name)
    (externs-alist :initarg :imports
 		  :reader imports
 		  :initform nil)))
@@ -48,12 +48,15 @@
 	 (extern-vec (loop for module-import in (wasm-module-imports module)
 			   for namespace = (namespace module-import)
 			   for name = (name module-import)
-			   for import = (assoc name (cdr (assoc namespace
-								namespace-alist)))
+			   for import = (cdr (assoc name
+						    (cdr (assoc namespace
+								namespace-alist
+								:test #'string=))
+						    :test #'string=))
 			   unless import
 			     do (error (format nil "Missing import: \"~a\".\"~a\"." namespace name))
 			   end
-			   collect (to-wasm-extern import) into externs-list
+			   collect import into externs-list
 			   finally (return (list-to-wasm-extern-vec externs-list))))
 	 (imports (enable-gc (make-instance 'wasm-imports
 					    :pointer (pointer extern-vec)

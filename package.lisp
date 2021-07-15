@@ -40,7 +40,8 @@
   (:export #:wasm-ref)
   ;; Values
   (:export #:wasm-val
-	   #:wasm-val-vec)
+	   #:wasm-val-vec
+	   #:make-wasm-val)
   ;; Frames
   (:export #:wasm-frame
 	   #:wasm-frame-vec)
@@ -68,12 +69,15 @@
   ;; Module Instances
   (:export #:wasm-imports
 	   #:make-wasm-imports
-	   #:wasm-instance-exports
-	   #:exports-alist
+	   #:make-wasm-namespace
+	   #:make-wasm-import
+	   #:name
+	   #:extern
+	   #:imports
+	   #:exports
 	   #:get-export
 	   #:wasm-instance
-	   #:make-wasm-instance
-	   #:exports)
+	   #:make-wasm-instance)
   ;; WAT
   (:export #:wat-to-wasm)
   ;; High-level interface
