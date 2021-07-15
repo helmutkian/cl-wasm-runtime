@@ -69,10 +69,11 @@
   (:export #:wasm-imports
 	   #:make-wasm-imports
 	   #:wasm-instance-exports
-	   #:wasm-instance-exports-to-alist
-	   #:wasm-instance-exports-func
+	   #:exports-alist
+	   #:get-export
 	   #:wasm-instance
-	   #:make-wasm-instance)
+	   #:make-wasm-instance
+	   #:exports)
   ;; WAT
   (:export #:wat-to-wasm)
   ;; High-level interface
