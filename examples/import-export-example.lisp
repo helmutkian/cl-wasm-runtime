@@ -11,24 +11,34 @@
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
 	 (module (wasm-rt:wat-to-wasm store *import-export-example-wat*))
-	 (host-func (wasm-rt:make-wasm-func store
-					    (wasm-rt:make-wasm-functype nil
-									(list (wasm-rt:make-wasm-valtype :wasm-i32)))
-					    (lambda (&rest args)
-					      (declare (ignore args))
-					      (wasm-rt:make-wasm-val 42 :wasm-i32))))
+	 (host-functype
+	   (wasm-rt:make-wasm-functype nil
+				       (list (wasm-rt:make-wasm-valtype :wasm-i32))))
+	 (host-func
+	   (wasm-rt:make-wasm-func store
+				   host-functype
+				   (lambda (&rest args)
+				     (declare (ignore args))
+				     (wasm-rt:make-wasm-val 42 :wasm-i32))))
+	 (host-globaltype
+	   (wasm-rt:make-wasm-globaltype (wasm-rt:make-wasm-valtype :wasm-i32)
+					 :wasm-const))
 	 (host-global
 	   (wasm-rt:make-wasm-global store
-				     (wasm-rt:make-wasm-globaltype (wasm-rt:make-wasm-valtype :wasm-i32)
-								   :wasm-const)
+				     host-globaltype
 				     (wasm-rt:make-wasm-val 42 :wasm-i32)))
-	 (imports (wasm-rt:make-wasm-imports module
-					     (list (wasm-rt:make-wasm-namespace ""
-										(list (wasm-rt:make-wasm-import "host_function"
-														host-func)))
-						   (wasm-rt:make-wasm-namespace "env"
-										(list (wasm-rt:make-wasm-import "host_global"
-														host-global))))))
+	 (empty-namespace
+	   (wasm-rt:make-wasm-namespace ""
+					(list (wasm-rt:make-wasm-import "host_function"
+									host-func))))
+	 (env-namespace
+	   (wasm-rt:make-wasm-namespace "env"
+					(list (wasm-rt:make-wasm-import "host_global"
+									host-global))))
+	 (imports
+	   (wasm-rt:make-wasm-imports module
+				      (list empty-namespace
+					    env-namespace)))
 	 (instance (wasm-rt:make-wasm-instance store module imports))
 	 (exports (wasm-rt:exports instance))
 	 (guest-func (wasm-rt:get-export exports "guest_function" 'wasm-rt:wasm-func))
