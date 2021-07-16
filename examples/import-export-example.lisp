@@ -11,24 +11,18 @@
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
 	 (module (wasm-rt:wat-to-wasm store *import-export-example-wat*))
-	 (host-functype
-	   (wasm-rt:make-wasm-functype nil
-				       (list (wasm-rt:make-wasm-valtype :wasm-i32))))
-	 (callback (wasm-rt:make-wasm-callback
-		    (lambda (&rest args)
-		      (declare (ignore args))
-		      42)))
-	 (host-func
-	   (wasm-rt:make-wasm-func store
-				   host-functype
-				   callback))
-	 (host-globaltype
-	   (wasm-rt:make-wasm-globaltype (wasm-rt:make-wasm-valtype :wasm-i32)
-					 :wasm-const))
-	 (host-global
-	   (wasm-rt:make-wasm-global store
-				     host-globaltype
-				     (wasm-rt:make-wasm-val 42 :wasm-i32)))
+	 (host-functype (wasm-rt:make-wasm-functype nil '(:wasm-i32)))
+	 (callback (wasm-rt:make-wasm-callback (lambda (&rest args)
+						 (declare (ignore args))
+						 42)))
+	 (host-func (wasm-rt:make-wasm-func store
+					    host-functype
+					    callback))
+	 (host-globaltype (wasm-rt:make-wasm-globaltype :wasm-i32
+							:wasm-const))
+	 (host-global (wasm-rt:make-wasm-global store
+						host-globaltype
+						(wasm-rt:make-wasm-val 42 :wasm-i32)))
 	 (empty-namespace
 	   (wasm-rt:make-wasm-namespace ""
 					(list (wasm-rt:make-wasm-import "host_function"

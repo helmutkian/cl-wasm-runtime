@@ -56,6 +56,11 @@
 			    :owner owner
 			    :kind (wasm-valkind-to-key (%wasm-valtype-kind pointer)))))
 
+(defun ensure-wasm-valtype (valtype-or-key)
+  (etypecase valtype-or-key
+    (wasm-valtype valtype-or-key)
+    (keyword (make-wasm-valtype valtype-or-key)))) 
+
 (define-wasm-vec-class valtype)
 
 (defun list-to-wasm-valtype-vec (list &key owner)
@@ -83,8 +88,8 @@
 (define-wasm-object-class functype)
 
 (defun make-wasm-functype (params-list results-list)
-  (let* ((params (list-to-wasm-valtype-vec params-list))
-	 (results (list-to-wasm-valtype-vec results-list))
+  (let* ((params (list-to-wasm-valtype-vec (mapcar #'ensure-wasm-valtype params-list)))
+	 (results (list-to-wasm-valtype-vec (mapcar #'ensure-wasm-valtype results-list)))
 	 (functype (enable-gc (make-instance 'wasm-functype
 					    :pointer (%wasm-functype-new params results)))))
     (setf (owner params) functype
@@ -119,10 +124,11 @@
 (define-wasm-object-class globaltype)
 
 (defun make-wasm-globaltype (valtype mutability-key)
-  (let* ((mutability (cffi:foreign-enum-value '%wasm-mutability-enum mutability-key))
+  (let* ((vtype (ensure-wasm-valtype valtype))
+	 (mutability (cffi:foreign-enum-value '%wasm-mutability-enum mutability-key))
 	 (globaltype (enable-gc (make-instance 'wasm-globaltype
-					      :pointer (%wasm-globaltype-new valtype mutability)))))
-    (setf (owner valtype) globaltype)
+					      :pointer (%wasm-globaltype-new vtype mutability)))))
+    (setf (owner vtype) globaltype)
     globaltype))
 
 ;;; Table Types
@@ -142,10 +148,11 @@
 (define-wasm-object-class globaltype)
 
 (defun make-wasm-tabletype (elements limits)
-  (let ((tabletype (enable-gc (make-instance 'wasm-globaltype
-					     :pointer (%wasm-tabletype-new elements limits)))))
-    (setf (owner elements) tabletype)
-    tabletype))	  
+  (let* ((valtype (ensure-wasm-valtype elements))
+	 (tabletype (enable-gc (make-instance 'wasm-globaltype
+					      :pointer (%wasm-tabletype-new valtype limits)))))
+    (setf (owner valtype) tabletype)
+    tabletype))
 
 ;;; Memory Types
 
@@ -186,8 +193,8 @@
 
 (defmacro define-wasm-externtype-conversion (type-name)
   (let* ((type-sym (make-object-type-parser-sym type-name))
-	 (to-externtype-name (make-cfun-name type-name "as_externtype"))
-	 (to-externtype-const-name (make-cfun-name type-name "as_externtype_const"))
+	 (to-externtype-name (format-wasm-cfun-name type-name "as_externtype"))
+	 (to-externtype-const-name (format-wasm-cfun-name type-name "as_externtype_const"))
 	 (from-externtype-name (list (format nil "wasm_externtype_as_~a" (string-downcase (string type-name)))
 				     (alexandria:symbolicate '%wasm-externtype-as- type-name)))
 	 (from-externtype-const-name (list (format nil "wasm_externtype_as_~a_const" (string-downcase (string type-name)))
@@ -327,11 +334,11 @@
 
 (defmacro define-wasm-ref-base (name)
   (let ((type-sym (make-object-type-parser-sym name))
-	(copy-name (make-cfun-name name "copy"))
-	(same-name (make-cfun-name name "same"))
-	(get-host-info-name (make-cfun-name name "get_host_info"))
-	(set-host-info-name (make-cfun-name name "set_host_info"))
-	(set-host-info-with-finalizer-name (make-cfun-name name "set_host_info_with_finalizer")))
+	(copy-name (format-wasm-cfun-name name "copy"))
+	(same-name (format-wasm-cfun-name name "same"))
+	(get-host-info-name (format-wasm-cfun-name name "get_host_info"))
+	(set-host-info-name (format-wasm-cfun-name name "set_host_info"))
+	(set-host-info-with-finalizer-name (format-wasm-cfun-name name "set_host_info_with_finalizer")))
     `(progn
        (define-wasm-object-type ,name)
        (define-wasm-own ,name)
@@ -351,10 +358,10 @@
 	   
 (defmacro define-wasm-ref (name)
   (let ((type-sym (make-object-type-parser-sym name))
-	(as-ref-name (make-cfun-name name "as_ref"))
+	(as-ref-name (format-wasm-cfun-name name "as_ref"))
 	(ref-as-name (list (format nil "wasm_ref_as_~a" (string-downcase name))
 			   (intern (format nil "%WASM-REF-AS-~A" name))))
-	(as-ref-const-name (make-cfun-name name "as_ref_const"))
+	(as-ref-const-name (format-wasm-cfun-name name "as_ref_const"))
 	(ref-as-const-name  (list (format nil "wasm_ref_as_~a_const" (string-downcase name))
 				  (intern (format nil "%WASM-REF-AS-~A-CONST" name)))))
     `(progn
@@ -372,8 +379,8 @@
   (let* ((shared-name (make-symbol (format nil "SHARED-~A" name)))
 	 (type-sym (make-object-type-parser-sym name))
 	 (shared-type-sym (make-object-type-parser-sym shared-name))
-	 (share-name (make-cfun-name name "share"))
-	 (obtain-name (make-cfun-name name "obtain")))
+	 (share-name (format-wasm-cfun-name name "share"))
+	 (obtain-name (format-wasm-cfun-name name "obtain")))
     `(progn
        (define-wasm-ref ,name)
        (define-wasm-own ,shared-name)

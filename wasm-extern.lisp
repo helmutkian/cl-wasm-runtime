@@ -11,7 +11,7 @@
 
 (defmacro define-wasm-extern-conversion (type)
   (let ((type-name (make-object-type-parser-sym type))
-	(as-extern-name (make-cfun-name type "as_extern"))
+	(as-extern-name (format-wasm-cfun-name type "as_extern"))
 	(as-type-name (list (format nil "wasm_extern_as_~a" (string-downcase type))
 			    (alexandria:symbolicate '%wasm-extern-as- type))))
     `(progn
