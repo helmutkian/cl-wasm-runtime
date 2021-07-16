@@ -65,9 +65,17 @@
 	(cffi:with-foreign-pointer (arr size)
 	  (loop for elm in list
 		for i from 0
-		do (setf (cffi:mem-aref arr :pointer i) (pointer elm)))
+		do (setf (cffi:mem-aref arr :pointer i)
+			 (%wasm-valtype-new (%wasm-valtype-kind (pointer elm)))))
 	  (make-wasm-valtype-vec size arr :owner owner)))))
 
+(defun list-to-wasm-valtype-vec (list &key owner)
+  (list-to-wasm-vec list
+		    #'make-wasm-valtype-vec
+		    (lambda (out-ptr src-ptr)
+		      (setf (cffi:mem-ref out-ptr :pointer)
+			    (%wasm-valtype-new (%wasm-valtype-kind src-ptr))))
+		    :owner owner))
 
 ;;; Function Types
 
@@ -341,7 +349,7 @@
     `(progn
        (define-wasm-object-type ,name)
        (define-wasm-own ,name)
-       (cffi:defcfun ,copy-name %wasm-name-type ; own
+       (cffi:defcfun ,copy-name ,type-sym ; own
 	 (,name ,type-sym))
        (cffi:defcfun ,same-name :boolean
 	 (x ,type-sym)

@@ -38,7 +38,8 @@
 					      (extern import)))))
 (defclass wasm-imports (wasm-extern-vec)
   ((namespace-alist :initarg :namespaces
-		    :reader :namespaces)))
+		    :reader namespaces)))
+	       
 
 (defun make-wasm-imports (module &optional namespaces-list)
   (let* ((namespace-alist (loop for namespace in namespaces-list
@@ -57,13 +58,11 @@
 			     do (error (format nil "Missing import: \"~a\".\"~a\"." namespace name))
 			   end
 			   collect import into externs-list
-			   finally (return (list-to-wasm-extern-vec externs-list))))
-	 (imports (enable-gc (make-instance 'wasm-imports
-					    :pointer (pointer extern-vec)
-					    :namespaces namespace-alist))))
-    (setf (owner extern-vec) imports)
-    imports))
-			      
+			   finally (return (list-to-wasm-extern-vec externs-list)))))
+    (change-class extern-vec
+		  'wasm-imports
+		  :namespaces namespace-alist)))
+	 
      
 (defclass wasm-instance-exports (wasm-extern-vec)
   ((export-alist :reader exports-alist)))

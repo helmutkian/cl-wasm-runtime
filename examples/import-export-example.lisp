@@ -48,6 +48,6 @@
   (values guest-func
 	  guest-global
 	  guest-memory
-	  guest-table)))
+	 guest-table)))
     
   

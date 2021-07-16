@@ -199,6 +199,16 @@
 	    list))
     (nreverse list)))
 
+(defun list-to-wasm-vec (list vec-ctr-function elm-copy-function &key owner)
+  (let ((size (length list)))
+    (cffi:with-foreign-pointer (arr size)
+      (loop for elm in list
+	    for i from 0
+	    do (funcall elm-copy-function
+			(cffi:mem-aptr arr :pointer i)
+			(pointer elm)))
+      (funcall vec-ctr-function size arr :owner owner))))
+
 ;;; Byte vectors
 
 (cffi:defctype %wasm-byte-type :uint8)

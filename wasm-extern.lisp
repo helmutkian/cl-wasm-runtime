@@ -52,6 +52,9 @@
 (define-to-wasm-extern-method table)
 (define-to-wasm-extern-method memory)
 
+(defmethod to-wasm-extern ((object wasm-extern))
+  object)
+
 (defmacro define-from-wasm-extern-method (type)
   (let* ((class-name (alexandria:symbolicate 'wasm- type))
 	 (as-extern-name (alexandria:symbolicate '%wasm-extern-as- type))
@@ -68,6 +71,9 @@
 (define-from-wasm-extern-method table)
 (define-from-wasm-extern-method memory)
 
+(defmethod from-wasm-extern ((extern wasm-extern) (type (eql 'wasm-extern)))
+  extern)
+
 (define-wasm-vec-class extern)
 
 (defun wasm-extern-vec-to-list (extern-vec &key owner)
@@ -77,11 +83,10 @@
 		    :owner (or owner (owner extern-vec))))
 
 (defun list-to-wasm-extern-vec (list &key owner)
-  (let ((size (length list)))
-    (if (zerop size)
-	(make-wasm-extern-vec-empty :owner owner)
-	(cffi:with-foreign-pointer (arr size)
-	  (loop for elm in list
-		for i from 0
-		do (setf (cffi:mem-aref arr :pointer i) (pointer elm)))
-	  (make-wasm-extern-vec size arr :owner owner)))))
+  (list-to-wasm-vec list
+		    #'make-wasm-extern-vec
+		    (lambda (out-ptr src-ptr)
+		      (setf (cffi:mem-ref out-ptr :pointer)
+			    (%wasm-extern-copy src-ptr)))
+		    :owner owner))
+			       

@@ -106,9 +106,10 @@
 		    :owner (owner val-vec)))
 
 (defun list-to-wasm-val-vec (list &key owner)
-  (let ((size (length list)))
-    (cffi:with-foreign-pointer (arr size)
-      (loop for elm in list
-	    for i from 0
-	    do (setf (cffi:mem-aref arr :pointer i) (pointer elm)))
-      (make-wasm-val-vec size arr :owner owner))))
+  (list-to-wasm-vec list
+		    #'make-wasm-val-vec
+		    (lambda (out-ptr src-ptr)
+		      (%wasm-val-copy out-ptr src-ptr))
+		    :owner owner))
+
+
