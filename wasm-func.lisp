@@ -36,8 +36,8 @@
   (user-env))
 
 (defclass wasm-host-func (wasm-func)
-  ((host-funcion :initarg :host-function
-		 :reader host-function)))
+  ((host-function :initarg :host-function
+		  :reader host-function)))
 
 (defstruct host-function-store
   (lock (make-rwlock))
@@ -87,49 +87,47 @@
 			    :pointer (alloc-function-environment store index)
 			    :parent store)))
 
-(cffi:defcallback function-trampoline :pointer ; %wasm-trap-type
+(defun wasm-func-error (store err)
+  (let* ((message (trivial-backtrace:print-backtrace err :output nil))
+	 (trap (make-wasm-trap store message)))
+    (pointer trap)))
+
+(defun host-funcall-with-trampoline (env args results &key with-environment)
+  (cffi:with-foreign-slots ((index store) env (:struct %function-environment-struct))
+    (handler-case
+	(let ((host-function (host-function-store-load *host-function-store* index)))
+	  (handler-case
+	      (let* ((args-list (wasm-val-vec-to-list args))
+		     (function (host-function-callback host-function))
+		     (results-list (apply function
+					  (append (when with-environment
+						    (list (host-function-user-env host-function)))
+						  args-list)))
+		     (num-results (length results-list)))
+		(cffi:with-foreign-slots ((data size) results (:struct %wasm-val-vec-struct))
+		  (unless (= num-results size)
+		    (error (format nil "Expected ~a results, but host function returned ~a" size num-results)))
+		  (loop for result in results-list
+			for i from 0
+			do (%wasm-val-copy (cffi:mem-aptr data :pointer i) result))
+		  (cffi:null-pointer)))
+	    (t (c)
+	      (wasm-func-error (host-function-store host-function) c))))
+    (t (c)
+       (wasm-func-error store c)))))
+      
+(cffi:defcallback function-trampoline %wasm-trap-type
     ((env :pointer)
-     (args :pointer) ; %wasm-val-vec-type)
-     (results :pointer)) ;  %wasm-val-vec-type))
-  (print env)
-  (cffi:with-foreign-slots ((index) env (:struct %function-environment-struct))
-    (let ((host-function (host-function-store-load *host-function-store* index)))
-      (print host-function)
-      (handler-case
-	  (let* ((args-list (wasm-val-vec-to-list args))
-		 (function (host-function-callback host-function))
-		 (results-list (apply function args-list))
-		 (num-results (length results-list)))
-	    (cffi:with-foreign-pointer (arr (length results-list))
-	     (%wasm-val-vec-new results num-results arr)
-	      (cffi:null-pointer)))
-	(t (c)
-	  (let* ((err (trivial-backtrace:print-backtrace c :output nil))
-		 (trap (make-wasm-trap (host-function-store host-function)
-				      err)))
-	    (pointer trap)))))))
+     (args %wasm-val-vec-type)
+     (results  %wasm-val-vec-type))
+  (host-funcall-with-trampoline env args results))
 
 (cffi:defcallback function-with-environment-trampoline %wasm-trap-type
     ((env :pointer)
      (args %wasm-val-vec-type)
      (results %wasm-val-vec-type))
-  (cffi:with-foreign-slots ((index) env (:struct %function-environment-struct))
-    (let ((host-function (host-function-store-load *host-function-store* index)))
-      (handler-case
-	  (let* ((args-list (wasm-val-vec-to-list args))
-		 (function (host-function-callback host-function))
-		 (results-list (apply function (host-function-user-env host-function)
-				      args-list))
-		 (num-results (length results-list)))
-	    (cffi:with-foreign-pointer (arr (length results-list))
-	     (%wasm-val-vec-new results num-results arr)
-	      (cffi:null-pointer)))
-	(t (c)
-	  (let* ((err (trivial-backtrace:print-backtrace c :output nil))
-		 (trap (make-wasm-trap (host-function-store host-function)
-				      err)))
-	    (pointer trap)))))))
-
+  (host-funcall-with-trampoline env args results :with-environment t))
+   
 (cffi:defcallback function-environment-finalizer :void
     ((env :pointer))
     ;; NOOP

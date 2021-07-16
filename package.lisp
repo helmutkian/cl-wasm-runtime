@@ -55,6 +55,7 @@
   ;; Function Instances
   (:export #:wasm-func
 	   #:make-wasm-func
+	   #:wasm-func-error
 	   #:wasm-funcall)
   ;; Global Instances
   (:export #:wasm-global
