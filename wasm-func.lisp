@@ -2,28 +2,28 @@
 
 (define-wasm-ref func)
 
-(cffi:defcfun ("wasm_func_new" %wasm-func-new) %wasm-func-type ; own
+(cffi:defcfun "wasm_func_new" %wasm-func-type ; own
   (store %wasm-store-type)
   (functype %wasm-functype-type)
   (callback :pointer))
 
-(cffi:defcfun ("wasm_func_new_with_env" %wasm-func-new-with-env) %wasm-func-type ; own
+(cffi:defcfun "wasm_func_new_with_env" %wasm-func-type ; own
   (store %wasm-store-type)
   (functype %wasm-functype-type)
   (callback :pointer)
   (env :pointer)
   (finalizer :pointer))
 
-(cffi:defcfun ("wasm_func_type" %wasm-func-type) %wasm-functype-type ; own
+(cffi:defcfun "wasm_func_type" %wasm-functype-type ; own
   (func %wasm-func-type))
 
-(cffi:defcfun ("wasm_func_param_arity" %wasm-func-param-arity) %size-type
+(cffi:defcfun "wasm_func_param_arity" %size-type
   (func %wasm-func-type))
 
-(cffi:defcfun ("wasm_func_result_arity" %wasm-func-result-arity) %size-type
+(cffi:defcfun "wasm_func_result_arity" %size-type
   (func %wasm-func-type))
 
-(cffi:defcfun ("wasm_func_call" %wasm-func-call) %wasm-trap-type
+(cffi:defcfun "wasm_func_call" %wasm-trap-type
   (func %wasm-func-type)
   (args %wasm-val-vec-type)
   (results %wasm-val-vec-type))

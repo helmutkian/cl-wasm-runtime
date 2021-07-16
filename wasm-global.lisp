@@ -2,19 +2,19 @@
 
 (define-wasm-ref global)
 
-(cffi:defcfun ("wasm_global_new" %wasm-global-new) %wasm-global-type ; own
+(cffi:defcfun "wasm_global_new" %wasm-global-type ; own
   (store %wasm-store-type)
   (globaltype %wasm-globaltype-type)
   (val %wasm-val-type))
 
-(cffi:defcfun ("wasm_global_type" %wasm-global-type) %wasm-globaltype-type ; own
+(cffi:defcfun "wasm_global_type" %wasm-globaltype-type ; own
   (global %wasm-global-type))
 
-(cffi:defcfun ("wasm_global_get" %wasm-global-get) :void
+(cffi:defcfun "wasm_global_get" :void
   (global %wasm-global-type)
   (out %wasm-val-type))
 
-(cffi:defcfun ("wasm_global_set" %wasm-global-set) :void
+(cffi:defcfun "wasm_global_set" :void
   (global %wasm-global-type)
   (value %wasm-val-type))
 	 

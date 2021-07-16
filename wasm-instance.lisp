@@ -2,13 +2,13 @@
 
 (define-wasm-ref instance)
 
-(cffi:defcfun ("wasm_instance_new" %wasm-instance-new) %wasm-instance-type ; own
+(cffi:defcfun "wasm_instance_new" %wasm-instance-type ; own
   (store %wasm-store-type)
   (module %wasm-module-type)
   (imports %wasm-extern-vec-type)
   (traps %wasm-trap-type)) ; own
 
-(cffi:defcfun ("wasm_instance_exports" %wasm-instance-exports) :void
+(cffi:defcfun "wasm_instance_exports" :void
   (instance %wasm-instance-type)
   (out %wasm-extern-vec-type))
 

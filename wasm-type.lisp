@@ -35,10 +35,10 @@
 (defun wasm-valkind-to-key (valkind)
   (cffi:foreign-enum-keyword '%wasm-val-kind-enum valkind))
 
-(cffi:defcfun ("wasm_valtype_new" %wasm-valtype-new) %wasm-valtype-type ; own
+(cffi:defcfun "wasm_valtype_new" %wasm-valtype-type ; own
   (valkind %wasm-val-kind-type))
 
-(cffi:defcfun ("wasm_valtype_kind" %wasm-valtype-kind) %wasm-val-kind-type
+(cffi:defcfun "wasm_valtype_kind" %wasm-val-kind-type
   (valtype %wasm-valtype-type))
 
 (define-wasm-object-class valtype ()
@@ -59,17 +59,6 @@
 (define-wasm-vec-class valtype)
 
 (defun list-to-wasm-valtype-vec (list &key owner)
-  (let ((size (length list)))
-    (if (zerop size)
-	(make-wasm-extern-vec-empty :owner owner)
-	(cffi:with-foreign-pointer (arr size)
-	  (loop for elm in list
-		for i from 0
-		do (setf (cffi:mem-aref arr :pointer i)
-			 (%wasm-valtype-new (%wasm-valtype-kind (pointer elm)))))
-	  (make-wasm-valtype-vec size arr :owner owner)))))
-
-(defun list-to-wasm-valtype-vec (list &key owner)
   (list-to-wasm-vec list
 		    #'make-wasm-valtype-vec
 		    (lambda (out-ptr src-ptr)
@@ -81,14 +70,14 @@
 
 (define-wasm-type functype)
 
-(cffi:defcfun ("wasm_functype_new" %wasm-functype-new) %wasm-functype-type ; own
+(cffi:defcfun "wasm_functype_new" %wasm-functype-type ; own
   (params %wasm-valtype-vec-type) ; own
   (results %wasm-valtype-vec-type)) ; own
 
-(cffi:defcfun ("wasm_functype_params" %wasm-functype-params) %wasm-valtype-vec-type ; const
+(cffi:defcfun "wasm_functype_params" %wasm-valtype-vec-type ; const
   (functype %wasm-functype-type))
 
-(cffi:defcfun ("wasm_functype_results" %wasm-functype-results) %wasm-valtype-vec-type ; const
+(cffi:defcfun "wasm_functype_results" %wasm-valtype-vec-type ; const
   (functype %wasm-functype-type))
 
 (define-wasm-object-class functype)
@@ -117,14 +106,14 @@
 
 (define-wasm-type globaltype)
 
-(cffi:defcfun ("wasm_globaltype_new" %wasm-globaltype-new) %wasm-globaltype-type ; own
+(cffi:defcfun "wasm_globaltype_new" %wasm-globaltype-type ; own
   (valtype %wasm-valtype-type) ; own
   (mutability %wasm-mutability-type))
 
-(cffi:defcfun ("wasm_globaltype_content" %wasm-globaltype-content) %wasm-valtype-type ; const
+(cffi:defcfun "wasm_globaltype_content" %wasm-valtype-type ; const
   (globaltype %wasm-globaltype-type))
 
-(cffi:defcfun ("wasm_global_type_mutability" %wasm-globaltype-mutability) %wasm-mutability-type ; const
+(cffi:defcfun "wasm_global_type_mutability" %wasm-mutability-type ; const
   (globaltype %wasm-globaltype-type))
 
 (define-wasm-object-class globaltype)
@@ -140,21 +129,21 @@
 
 (define-wasm-type tabletype)
 
-(cffi:defcfun ("wasm_tabletype_new" %wasm-tabletype-new) %wasm-tabletype-type ; own
+(cffi:defcfun "wasm_tabletype_new" %wasm-tabletype-type ; own
   (elements %wasm-valtype-type) ; own
   (limits (:pointer (:struct %wasm-limits-type))))
 
-(cffi:defcfun ("wasm_tabletype_element" %wasm-tabletype-element) %wasm-valtype-type ; const
+(cffi:defcfun "wasm_tabletype_element" %wasm-valtype-type ; const
   (tabletype %wasm-tabletype-type))
 
-(cffi:defcfun ("wasm_tabletype_limits" %wasm-tabletype-limits) (:pointer (:struct %wasm-limits-type))
+(cffi:defcfun "wasm_tabletype_limits" (:pointer (:struct %wasm-limits-type))
   (tabletype %wasm-tabletype-type))
 
 (define-wasm-object-class globaltype)
 
 (defun make-wasm-tabletype (elements limits)
   (let ((tabletype (enable-gc (make-instance 'wasm-globaltype
-					     :pointer (%wasm-tabletype-new valtype limits)))))
+					     :pointer (%wasm-tabletype-new elements limits)))))
     (setf (owner elements) tabletype)
     tabletype))	  
 
@@ -162,10 +151,10 @@
 
 (define-wasm-type memorytype)
 
-(cffi:defcfun ("wasm_memorytype_new" %wasm-memorytype-new) %wasm-memorytype-type ; own
+(cffi:defcfun "wasm_memorytype_new" %wasm-memorytype-type ; own
   (limits (:pointer (:struct %wasm-limits-type))))
 
-(cffi:defcfun ("wasm_memorytype_limits" %wasm-memorytype-limits) (:pointer (:struct %wasm-limits-type)) ; const
+(cffi:defcfun "wasm_memorytype_limits" (:pointer (:struct %wasm-limits-type)) ; const
   (memorytype %wasm-memorytype-type))
 
 (define-wasm-object-class memorytype)
@@ -192,7 +181,7 @@
 
 (define-wasm-type externtype)
 
-(cffi:defcfun ("wasm_externtype_kind" %wasm-externtype-kind) %wasm-extern-kind-type
+(cffi:defcfun "wasm_externtype_kind" %wasm-extern-kind-type
   (externtype %wasm-externtype-type))
 
 (defmacro define-wasm-externtype-conversion (type-name)
@@ -256,8 +245,8 @@
 
 (defun make-wasm-importtype (namespace name externtype)
   (let ((importtype (enable-gc (make-instance 'wasm-importtype
-					      :pointer (%wasm-importtype-new module name externtype)
-					      :parent module))))
+					      :pointer (%wasm-importtype-new namespace name externtype)
+					      :parent namespace))))
     (setf (owner namespace) importtype
 	  (owner name) importtype
 	  (owner externtype) importtype)
@@ -288,14 +277,14 @@
 
 (define-wasm-type exporttype)
 
-(cffi:defcfun ("wasm_exporttype_new" %wasm-exporttype-new) %wasm-exporttype-type ; own
+(cffi:defcfun "wasm_exporttype_new" %wasm-exporttype-type ; own
   (name %wasm-name-type) ; own
   (externtype %wasm-externtype-type)) ; own
 
-(cffi:defcfun ("wasm_exporttype_name" %wasm-exporttype-name) %wasm-name-type ; const
+(cffi:defcfun "wasm_exporttype_name" %wasm-name-type ; const
   (exporttype %wasm-exporttype-type))
 
-(cffi:defcfun ("wasm_exporttype_type" %wasm-exporttype-type) %wasm-externtype-type ; const
+(cffi:defcfun "wasm_exporttype_type" %wasm-externtype-type ; const
   (exporttype %wasm-exporttype-type))
 
 (define-wasm-object-class exporttype ()
@@ -312,9 +301,6 @@
     (setf (owner name) exporttype
 	  (owner externtype) exporttype)))
 					     
-    
-    
-
 (defun wrap-wasm-exporttype (pointer &key owner)
   (let ((exporttype (make-instance 'wasm-exporttype
 				    :pointer pointer

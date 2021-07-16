@@ -2,27 +2,27 @@
 
 (define-wasm-sharable-ref module)
 
-(cffi:defcfun ("wasm_module_new" %wasm-module-new) %wasm-module-type ; own
+(cffi:defcfun "wasm_module_new" %wasm-module-type ; own
   (store %wasm-store-type)
   (binary %wasm-byte-vec-type))
 
-(cffi:defcfun ("wasm_module_validate" %wasm-module-validate) :boolean
+(cffi:defcfun "wasm_module_validate" :boolean
   (store %wasm-store-type)
   (binary %wasm-byte-vec-type))
 
-(cffi:defcfun ("wasm_module_imports" %wasm-module-imports) :void
+(cffi:defcfun "wasm_module_imports" :void
   (module %wasm-module-type)
   (out %wasm-importtype-vec-type))
 
-(cffi:defcfun ("wasm_module_exports" %wasm-module-exports) :void
+(cffi:defcfun "wasm_module_exports" :void
   (module %wasm-module-type)
   (out %wasm-exporttype-type))
 
-(cffi:defcfun ("wasm_module_serialize" %wasm-module-serialize) :void
+(cffi:defcfun "wasm_module_serialize" :void
   (module %wasm-module-type)
   (out %wasm-byte-vec-type))
 
-(cffi:defcfun ("wasm_module_deserialize" %wasm-module-deserialize) %wasm-module-type
+(cffi:defcfun "wasm_module_deserialize" %wasm-module-type
   (store %wasm-store-type)
   (binary %wasm-byte-vec-type))
 

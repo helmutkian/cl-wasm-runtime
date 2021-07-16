@@ -3,10 +3,10 @@
 (define-wasm-ref extern)
 (define-wasm-vec extern)
 
-(cffi:defcfun ("wasm_extern_kind" %wasm-extern-kind) %wasm-extern-kind-type
+(cffi:defcfun "wasm_extern_kind" %wasm-extern-kind-type
   (extern %wasm-extern-type))
 
-(cffi:defcfun ("wasm_extern_type" %wasm-extern-type) %wasm-externtype-type ; own
+(cffi:defcfun "wasm_extern_type" %wasm-externtype-type ; own
   (extern %wasm-extern-type))
 
 (defmacro define-wasm-extern-conversion (type)
@@ -39,7 +39,7 @@
 
 (defmacro define-to-wasm-extern-method (type)
   (let* ((class-name (alexandria:symbolicate 'wasm- type))
-	 (as-type-name (second (make-cfun-name type "as_extern"))))
+	 (as-type-name (translate-wasm-name (format-wasm-cfun-name type "as_extern"))))
     `(defmethod to-wasm-extern ((,type ,class-name))
        (let ((pointer (,as-type-name ,type)))
 	 (unless (null? pointer)
@@ -88,5 +88,4 @@
 		    (lambda (out-ptr src-ptr)
 		      (setf (cffi:mem-ref out-ptr :pointer)
 			    (%wasm-extern-copy src-ptr)))
-		    :owner owner))
-			       
+		    :owner owner))			       

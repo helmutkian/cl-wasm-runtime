@@ -4,7 +4,7 @@
 
 (define-wasm-own config)
 
-(cffi:defcfun ("wasm_config_new" %wasm-config-new) %wasm-config-type) ;own
+(cffi:defcfun "wasm_config_new" %wasm-config-type) ;own
 
 (define-wasm-object-class config)
 
@@ -15,9 +15,9 @@
 
 (define-wasm-own engine)
 
-(cffi:defcfun ("wasm_engine_new" %wasm-engine-new) %wasm-engine-type) ; own
+(cffi:defcfun "wasm_engine_new" %wasm-engine-type) ; own
 
-(cffi:defcfun ("wasm_engine_new_with_config" %wasm-engine-new-with-config) %wasm-engine-type ; own
+(cffi:defcfun "wasm_engine_new_with_config" %wasm-engine-type ; own
   (config %wasm-config-type)) ; own
 
 (define-wasm-object-class engine)
@@ -36,7 +36,7 @@
 (define-wasm-object-type store)
 (define-wasm-own store)
 
-(cffi:defcfun ("wasm_store_new" %wasm-store-new) %wasm-store-type ;own
+(cffi:defcfun "wasm_store_new" %wasm-store-type ;own
   (engine %wasm-engine-type))
 
 (define-wasm-object-class store)

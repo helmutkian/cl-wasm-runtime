@@ -16,17 +16,28 @@
 
   (defun make-object-type-parser-sym (name)
     (alexandria:symbolicate '%wasm- name '-type))
- 
-  (defun make-cfun-name (name cfunc-name-suffix)
-    (let* ((cfunc-name (format nil
-			       "wasm_~{~a~^_~}_~a"
-			       (split-sequence:split-sequence #\- (string-downcase (string name)))
-			       cfunc-name-suffix))
-	   (func-name (alexandria:format-symbol *package*
-						"%WASM-~a-~{~:@(~a~)~^-~}"
-						name
-						(split-sequence:split-sequence #\_ cfunc-name-suffix))))
-      (list cfunc-name func-name))))
+
+  (defun translate-wasm-name (name)
+    (etypecase name
+      (string
+       (alexandria:symbolicate '% (cffi:translate-underscore-separated-name name)))
+      (symbol
+       (let ((translated-name (cffi:translate-underscore-separated-name name)))
+	 (if (eql (elt translated-name 0) #\%)
+	     (subseq translated-name 1)
+	     translated-name)))))
+
+  (defun format-wasm-cfun-name (name cfunc-name-suffix)
+    (format nil
+	    "wasm_~a_~a"
+	    (cffi:translate-underscore-separated-name name)
+	    cfunc-name-suffix))
+
+  (defmethod cffi:translate-name-from-foreign (foreign-name (package (eql *package*)) &optional varp)
+    (let ((name (translate-wasm-name foreign-name)))
+      (if varp
+	  (alexandria:symbolicate '* name '*)
+	  name))))
 
 ;;; COMMON
 
@@ -48,11 +59,11 @@
   (let* ((vec-name (make-symbol (format nil "~A-VEC" name)))
 	 (type-sym (make-object-type-parser-sym vec-name))
 	 (struct-type-sym (alexandria:symbolicate '%wasm- vec-name '-struct))
-	 (new-empty-name (make-cfun-name vec-name "new_empty"))
-	 (new-uninitialized-name (make-cfun-name vec-name "new_uninitialized"))
-	 (new-name (make-cfun-name vec-name "new"))
-	 (copy-name (make-cfun-name vec-name "copy"))
-	 (delete-name (make-cfun-name vec-name "delete")))
+	 (new-empty-name (format-wasm-cfun-name vec-name "new_empty"))
+	 (new-uninitialized-name (format-wasm-cfun-name vec-name "new_uninitialized"))
+	 (new-name (format-wasm-cfun-name vec-name "new"))
+	 (copy-name (format-wasm-cfun-name vec-name "copy"))
+	 (delete-name (format-wasm-cfun-name vec-name "delete")))
     `(progn
        ;; WASM object type
        (define-wasm-object-type ,vec-name)
@@ -116,7 +127,7 @@
 
 (defmacro define-wasm-own (name)
   (let* ((parser-sym (make-object-type-parser-sym name))
-	 (delete-name (make-cfun-name name "delete")))
+	 (delete-name (format-wasm-cfun-name name "delete")))
     `(progn
        (define-wasm-object-type ,name)
        (cffi:defcfun ,delete-name :void
@@ -124,7 +135,7 @@
 
 (defmacro define-wasm-type (name)
   (let ((type-sym (make-object-type-parser-sym name))
-	(copy-name (make-cfun-name name "copy")))
+	(copy-name (format-wasm-cfun-name name "copy")))
     `(progn
        (define-wasm-own ,name)
        (define-wasm-vec ,name)
@@ -133,7 +144,7 @@
 
 (defmacro define-wasm-object-class (name &optional supers slots &rest options)
   (let ((class-name (alexandria:symbolicate 'wasm- name))
-	(delete-name (second (make-cfun-name name "delete"))))
+	(delete-name (translate-wasm-name (format-wasm-cfun-name name "delete"))))
     `(defclass ,class-name
 	 (,@supers ,@(unless (find-if (lambda (super) (subtypep super 'wasm-object))
 				      supers)
@@ -161,12 +172,12 @@
 	 (struct-type-sym (alexandria:symbolicate '%wasm- vec-name '-struct))
 	 (class-name (alexandria:symbolicate 'wasm- vec-name))
 	 (make-empty-name (alexandria:symbolicate 'make-wasm- vec-name '-empty))
-	 (new-empty-name (second (make-cfun-name vec-name "new_empty")))
+	 (new-empty-name (translate-wasm-name (format-wasm-cfun-name vec-name "new_empty")))
 	 (make-uninitialized-name (alexandria:symbolicate 'make-wasm- vec-name '-uninitialized))
-	 (new-uninitialized-name (second (make-cfun-name vec-name "new_uninitialized")))
+	 (new-uninitialized-name (translate-wasm-name (format-wasm-cfun-name vec-name "new_uninitialized")))
 	 (make-name (alexandria:symbolicate 'make-wasm- vec-name))
-	 (new-name (second (make-cfun-name vec-name "new")))
-	 (copy-name (second (make-cfun-name vec-name "copy"))))
+	 (new-name (translate-wasm-name (format-wasm-cfun-name vec-name "new")))
+	 (copy-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy"))))
     `(progn
        (define-wasm-object-class ,vec-name)
        (defun ,make-empty-name (&key owner)

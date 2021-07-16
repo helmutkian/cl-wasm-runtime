@@ -14,10 +14,10 @@
 (define-wasm-object-type val)
 (define-wasm-vec val)
 
-(cffi:defcfun ("wasm_val_delete" %wasm-val-delete) :void
+(cffi:defcfun "wasm_val_delete" :void
   (v %wasm-val-type))
 
-(cffi:defcfun ("wasm_val_copy" %wasm-val-copy) :void
+(cffi:defcfun "wasm_val_copy" :void
   (out %wasm-val-type)
   (in %wasm-val-type))
 
