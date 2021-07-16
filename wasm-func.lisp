@@ -133,6 +133,16 @@
     ;; NOOP
   (declare (ignore env)))
 
+(defun make-wasm-callback (function &key with-wasm-val-arguments)
+  (lambda (&rest args-val-list)
+    (let ((args (if with-wasm-val-arguments
+		    args-val-list
+		    (mapcar #'wasm-val-to-lisp args-val-list))))
+      (loop for result in (multiple-value-list (apply function args))
+	    collect (typecase result
+		      (wasm-val result)
+		      (t (lisp-to-wasm-val result)))))))
+	    
 (defun make-wasm-func (store functype callback &optional env)
   (let* ((host-function (make-host-function :store store :callback callback :user-env env))
 	 (index (host-function-store-save *host-function-store* host-function))

@@ -14,12 +14,14 @@
 	 (host-functype
 	   (wasm-rt:make-wasm-functype nil
 				       (list (wasm-rt:make-wasm-valtype :wasm-i32))))
+	 (callback (wasm-rt:make-wasm-callback
+		    (lambda (&rest args)
+		      (declare (ignore args))
+		      42)))
 	 (host-func
 	   (wasm-rt:make-wasm-func store
 				   host-functype
-				   (lambda (&rest args)
-				     (declare (ignore args))
-				     (wasm-rt:make-wasm-val 42 :wasm-i32))))
+				   callback))
 	 (host-globaltype
 	   (wasm-rt:make-wasm-globaltype (wasm-rt:make-wasm-valtype :wasm-i32)
 					 :wasm-const))
