@@ -212,7 +212,6 @@
 	     (let ((trap (%wasm-func-call func args results)))
 	       (unless (null? trap)
 		 ;; TODO add trap data
-		 (print trap)
 		 (cffi:with-foreign-object (bytes '(:struct %wasm-byte-vec-struct))
 		   (%wasm-trap-message trap bytes)
 		   (error 'wasm-trap-error :message (wasm-byte-vec-to-string bytes))))
