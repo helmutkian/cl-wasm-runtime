@@ -87,10 +87,9 @@
 			    :pointer (alloc-function-environment store index)
 			    :parent store)))
 
-(defun wasm-func-error (store err)
-  (let* ((message (trivial-backtrace:print-backtrace err :output nil))
-	 (trap (make-wasm-trap store message)))
-    (pointer trap)))
+(defgeneric to-wasm-trap-message (err)
+  (:method ((err condition))
+    (trivial-backtrace:print-condition err nil)))
 
 (defun host-funcall-with-trampoline (env args results &key with-environment)
   (cffi:with-foreign-slots ((index store) env (:struct %function-environment-struct))
@@ -112,9 +111,11 @@
 			do (%wasm-val-copy (cffi:mem-aptr data :pointer i) result))
 		  (cffi:null-pointer)))
 	    (t (c)
-	      (wasm-func-error (host-function-store host-function) c))))
+	      (make-wasm-trap (host-function-store host-function)
+			      (to-wasm-trap-message c)))))
     (t (c)
-       (wasm-func-error store c)))))
+      (make-wasm-trap store
+		      (to-wasm-trap-message c))))))
       
 (cffi:defcallback function-trampoline %wasm-trap-type
     ((env :pointer)
@@ -171,6 +172,12 @@
 (defun wasm-func-type (func &key owner)
   (wrap-wasm-functype (%wasm-func-type func) :owner owner))
 
+(define-condition wasm-trap-error (error)
+  ((message :initarg :message
+	    :accessor message))
+  (:report (lambda (c s)
+	     (print (message c) s))))
+
 (defun wasm-funcall (func &rest received-args)
   ;; Wasmer does not expose its internal trampoline to the C API. Therefore calling host functions
   ;; as WASM functions is not supported and will result in a panic. We could just call the host function
@@ -188,10 +195,10 @@
     (cffi:with-foreign-objects ((arg-arr '(:struct %wasm-val-struct) num-params)
 				(args '(:struct %wasm-val-vec-struct))
 				(results '(:struct %wasm-val-vec-struct)))
-      
+      ;; TODO: Clean up this mess
       (loop for arg in received-args
 	    for i from 0
-	    do (wasm-val-init (cffi:mem-aptr arg-arr '(:struct %wasm-val-struct))
+	    do (wasm-val-init (cffi:mem-aptr arg-arr '(:struct %wasm-val-struct) i)
 			      (cffi:foreign-enum-keyword
 			       '%wasm-val-kind-enum
 			       (%wasm-valtype-kind (wasm-vec-aref (pointer params)
@@ -200,14 +207,19 @@
 			      arg))
       (unwind-protect
 	   (progn
-	     (if (zerop num-params)
-		 (%wasm-val-vec-new-empty args)
-		 (%wasm-val-vec-new args num-params arg-arr))
+	     (%wasm-val-vec-new args num-params arg-arr)
 	     (%wasm-val-vec-new-uninitialized results num-results)
-	     (%wasm-func-call func args results)
-	     (loop for i below num-results
-		   collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
-		     into result-values
-		   finally (return (values-list result-values))))
-	(%wasm-val-vec-delete args)
-	(%wasm-val-vec-delete results)))))
+	     (let ((trap (%wasm-func-call func args results)))
+	       (unless (null? trap)
+		 ;; TODO add trap data
+		 (print trap)
+		 (cffi:with-foreign-object (bytes '(:struct %wasm-byte-vec-struct))
+		   (%wasm-trap-message trap bytes)
+		   (error 'wasm-trap-error :message (wasm-byte-vec-to-string bytes))))
+	       (unwind-protect
+		    (loop for i below num-results
+			  collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
+			    into result-values
+			  finally (return (values-list result-values)))
+		 (%wasm-val-vec-delete results))))
+	(%wasm-val-vec-delete args)))))

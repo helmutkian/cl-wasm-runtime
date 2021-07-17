@@ -26,6 +26,9 @@
 
 (defgeneric owner (object))
 
+(defmethod owner (object)
+  nil)
+
 (defmethod owner ((object wasm-object))
   (or (slot-value object 'owner) object))
 

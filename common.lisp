@@ -206,7 +206,9 @@
     (do-wasm-vec ((elm-pointer :pointer)
 		  (if (cffi:pointerp vec) vec (pointer vec))
 		  vec-type)
-      (push (funcall wrap-function elm-pointer :owner (or owner vec))
+      (push (funcall wrap-function elm-pointer
+		     :owner (or owner
+				(unless (cffi:pointerp vec) vec)))
 	    list))
     (nreverse list)))
 
@@ -229,15 +231,15 @@
 (define-wasm-object-class byte)
 (define-wasm-vec-class byte)
 
-(cffi:defctype %wasm-message-struct (:struct %wasm-byte-vec-struct)) ; Null terminated
+(cffi:defctype %wasm-message-struct (:struct %wasm-byte-vec-struct))
 
 (cffi:define-foreign-type wasm-message-type (wasm-byte-vec-type)
   ()
   (:simple-parser %wasm-message-type))
 
-(cffi:defctype %wasm-name-struct %wasm-message-struct)
+(cffi:defctype %wasm-name-struct %wasm-message-struct) ; Null terminated
 
-(cffi:define-foreign-type wasm-name-type (wasm-message-type)
+(cffi:define-foreign-type wasm-name-type (wasm-message-type) ; Null terminated
   ()
   (:simple-parser %wasm-name-type))
 
@@ -284,11 +286,11 @@
 (defmethod cffi:translate-to-foreign ((str string) (type wasm-byte-vec-type))
   (pointer (string-to-wasm-byte-vec str)))
 
-(defmethod cffi:translate-to-foreign ((str string) (type wasm-message-type))
+(defmethod cffi:translate-to-foreign ((str string) (type wasm-name-type))
   (pointer (string-to-wasm-byte-vec str :null-terminated t)))
 
 (defmethod cffi:translate-to-foreign ((octets simple-array) (type wasm-byte-vec-type))
   (pointer (octets-to-wasm-byte-vec octets)))
 
-(defmethod cffi:translate-to-foreign ((octets simple-array) (type wasm-message-type))
+(defmethod cffi:translate-to-foreign ((octets simple-array) (type wasm-name-type))
   (pointer (octets-to-wasm-byte-vec octets :null-terminated t)))

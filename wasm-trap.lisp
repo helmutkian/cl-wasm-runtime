@@ -8,7 +8,7 @@
 
 (cffi:defcfun "wasm_trap_message" :void
   (trap %wasm-trap-type)
-  (out (:pointer %wasm-message-type)))
+  (out %wasm-message-type))
 
 (cffi:defcfun "wasm_trap_origin" %wasm-frame-type ; own
   (trap %wasm-trap-type))
