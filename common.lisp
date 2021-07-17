@@ -206,7 +206,7 @@
     (do-wasm-vec ((elm-pointer :pointer)
 		  (if (cffi:pointerp vec) vec (pointer vec))
 		  vec-type)
-      (push (funcall wrap-function elm-pointer :owner owner)
+      (push (funcall wrap-function elm-pointer :owner (or owner vec))
 	    list))
     (nreverse list)))
 
