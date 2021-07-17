@@ -11,8 +11,9 @@
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
 	 (module (wasm-rt:wat-to-wasm store *add-one-wat*))
-	 (imports (wasm-rt:make-wasm-imports))
+	 (imports (wasm-rt:make-wasm-imports module))
 	 (instance (wasm-rt:make-wasm-instance store module imports))
-	 (add-one (wasm-rt:wasm-instance-exports-func "add_one"
-						      (wasm-rt:wasm-instance-exports instance))))
+	 (add-one (wasm-rt:get-export (wasm-rt:exports instance)
+				       "add_one"
+				       'wasm-rt:wasm-func)))
     (wasm-rt:wasm-funcall add-one 1)))
