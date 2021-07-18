@@ -19,14 +19,11 @@
 	 (callback (wasm-rt:make-wasm-callback (lambda (&rest args)
 						 (declare (ignore args))
 						 (error "EARLY EXIT!"))))
-	(host-func (wasm-rt:make-wasm-func store
-					   host-functype
-					   callback))
-	 (env-namespace
-	   (wasm-rt:make-wasm-namespace "env"
-					(list (wasm-rt:make-wasm-import "early_exit"
-								       host-func))))
-	 (imports (wasm-rt:make-wasm-imports module (list env-namespace)))
+	 (host-func (wasm-rt:make-wasm-func store host-functype callback))
+	 (env-namespace (wasm-rt:make-wasm-namespace "env"
+						     (wasm-rt:make-wasm-import "early_exit"
+									       host-func)))
+	 (imports (wasm-rt:make-wasm-imports module env-namespace))
 	 (instance (wasm-rt:make-wasm-instance store module imports))
 	 (exports (wasm-rt:exports instance))
 	 (run (wasm-rt:get-export exports "run" 'wasm-rt:wasm-func)))

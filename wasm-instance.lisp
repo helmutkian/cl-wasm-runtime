@@ -30,7 +30,7 @@
 		  :reader imports
 		  :initform nil)))
 
-(defun make-wasm-namespace (namespace-name imports-list)
+(defun make-wasm-namespace (namespace-name &rest imports-list)
   (make-instance 'wasm-import-namespace
 		 :name namespace-name
 		 :imports (loop for import in imports-list
@@ -41,7 +41,7 @@
 		    :reader namespaces)))
 	       
 
-(defun make-wasm-imports (module &optional namespaces-list)
+(defun make-wasm-imports (module &rest namespaces-list)
   (let* ((namespace-alist (loop for namespace in namespaces-list
 				for name = (name namespace)
 				for externs-alist = (imports namespace)
