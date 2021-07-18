@@ -39,24 +39,28 @@
 			     '(:union %wasm-val-union)
 			     (wasm-val-type-kind-of kind-key))))
 
-(defun wasm-val-init (wasm-val wasm-val-kind-key val)
-  (setf (cffi:foreign-slot-value wasm-val '(:struct %wasm-val-struct) 'kind)
-	(cffi:foreign-enum-value '%wasm-val-kind-enum wasm-val-kind-key)
-	(cffi:foreign-slot-value (cffi:foreign-slot-value wasm-val
-							  '(:struct %wasm-val-struct)
-							  'of)
-				 '(:union %wasm-val-union)
-				 (wasm-val-type-kind-of wasm-val-kind-key))
-	val))
+(defun wasm-val-init (wasm-val kind val)
+  (let ((kind-key (cffi:foreign-enum-keyword '%wasm-val-kind-enum kind))
+	(kind-of (cffi:foreign-slot-value wasm-val '(:struct %wasm-val-struct) 'of)))
+    (setf (cffi:foreign-slot-value wasm-val '(:struct %wasm-val-struct) 'kind)
+	  kind
+	  (cffi:foreign-slot-value kind-of '(:union %wasm-val-union) (wasm-val-type-kind-of kind-key))
+	  val)))
 
 (define-wasm-object-class val)
 
-(defun make-wasm-val (lisp-val kind-key &key owner)
+(defun make-wasm-val (lisp-val kind-or-key &key owner)
   (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-val-struct)))
 	 (wasm-val (enable-gc (make-instance 'wasm-val
 					     :pointer pointer
 					     :owner owner))))
-    (wasm-val-init pointer kind-key lisp-val)
+    (wasm-val-init pointer
+		   (typecase kind-or-key
+		     (keyword
+		      (cffi:foreign-enum-value '%wasm-val-kind-enum kind-or-key))
+		     (t
+		      kind-or-key))
+		   lisp-val)
     wasm-val))
 
 (defun wasm-val-kind (wasm-val)

@@ -195,16 +195,13 @@
     (cffi:with-foreign-objects ((arg-arr '(:struct %wasm-val-struct) num-params)
 				(args '(:struct %wasm-val-vec-struct))
 				(results '(:struct %wasm-val-vec-struct)))
-      ;; TODO: Clean up this mess
       (loop for arg in received-args
 	    for i from 0
-	    do (wasm-val-init (cffi:mem-aptr arg-arr '(:struct %wasm-val-struct) i)
-			      (cffi:foreign-enum-keyword
-			       '%wasm-val-kind-enum
-			       (%wasm-valtype-kind (wasm-vec-aref (pointer params)
-								  '(:struct %wasm-valtype-vec-struct)
-								  i)))
-			      arg))
+	    for kind = (%wasm-valtype-kind (wasm-vec-aref (pointer params)
+							  '(:struct %wasm-valtype-vec-struct)
+							  i))
+	    for arg-val-ptr = (cffi:mem-aptr arg-arr '(:struct %wasm-val-struct) i)
+	    do (wasm-val-init arg-val-ptr kind arg))
       (unwind-protect
 	   (progn
 	     (%wasm-val-vec-new args num-params arg-arr)
@@ -215,10 +212,9 @@
 		 (cffi:with-foreign-object (bytes '(:struct %wasm-byte-vec-struct))
 		   (%wasm-trap-message trap bytes)
 		   (error 'wasm-trap-error :message (wasm-byte-vec-to-string bytes))))
-	       (unwind-protect
-		    (loop for i below num-results
-			  collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
-			    into result-values
-			  finally (return (values-list result-values)))
-		 (%wasm-val-vec-delete results))))
+	       (loop for i below num-results
+		     collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
+		       into result-values
+		     finally (return (values-list result-values)))))
+	(%wasm-val-vec-delete results)
 	(%wasm-val-vec-delete args)))))
