@@ -61,15 +61,9 @@
     (wasm-valtype valtype-or-key)
     (keyword (make-wasm-valtype valtype-or-key)))) 
 
-(define-wasm-vec-class valtype)
-
-(defun list-to-wasm-valtype-vec (list &key owner)
-  (list-to-wasm-vec list
-		    #'make-wasm-valtype-vec
-		    (lambda (out-ptr src-ptr)
-		      (setf (cffi:mem-ref out-ptr :pointer)
-			    (%wasm-valtype-new (%wasm-valtype-kind src-ptr))))
-		    :owner owner))
+(define-wasm-vec-class valtype ()
+  ((wrap-data-function :allocation :class
+		       :initform #'wrap-wasm-valtype)))
 
 ;;; Function Types
 
@@ -88,8 +82,8 @@
 (define-wasm-object-class functype)
 
 (defun make-wasm-functype (params-list results-list)
-  (let* ((params (list-to-wasm-valtype-vec (mapcar #'ensure-wasm-valtype params-list)))
-	 (results (list-to-wasm-valtype-vec (mapcar #'ensure-wasm-valtype results-list)))
+  (let* ((params (from-list (mapcar #'ensure-wasm-valtype params-list) 'wasm-valtype-vec))
+	 (results (from-list (mapcar #'ensure-wasm-valtype results-list) 'wasm-valtype-vec))
 	 (functype (enable-gc (make-instance 'wasm-functype
 					    :pointer (%wasm-functype-new params results)))))
     (setf (owner params) functype
@@ -272,13 +266,9 @@
 				:owner (owner importtype)))
     importtype))
       
-(define-wasm-vec-class importtype)
-
-(defun wasm-importtype-vec-to-list (importtype-vec)
-  (wasm-vec-to-list importtype-vec
-		    '(:struct %wasm-importtype-vec-struct)
-		    #'wrap-wasm-importtype
-		    :owner importtype-vec))
+(define-wasm-vec-class importtype ()
+  ((wrap-data-function :allocation :class
+		       :initform #'wrap-wasm-importtype)))
 
 ;;; Export Types
 
@@ -320,13 +310,9 @@
 				:owner (owner exporttype)))
     exporttype))
 
-(define-wasm-vec-class exporttype)
-
-(defun wasm-exporttype-vec-to-list (exporttype-vec)
-  (wasm-vec-to-list exporttype-vec
-		    '(:struct %wasm-exporttype-vec-struct)
-		    #'wrap-wasm-exporttype
-		    :owner exporttype-vec))
+(define-wasm-vec-class exporttype ()
+  ((wrap-data-function :allocation :class
+		       :initform #'wrap-wasm-exporttype)))
 
 ;;; References
 

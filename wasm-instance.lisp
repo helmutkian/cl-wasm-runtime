@@ -58,7 +58,7 @@
 			     do (error (format nil "Missing import: \"~a\".\"~a\"." namespace name))
 			   end
 			   collect import into externs-list
-			   finally (return (list-to-wasm-extern-vec externs-list)))))
+			   finally (return (from-list externs-list 'wasm-extern-vec)))))
     (change-class extern-vec
 		  'wasm-imports
 		  :namespaces namespace-alist)))
@@ -76,7 +76,7 @@
     (%wasm-instance-exports instance exports)
     (enable-gc exports)
     (setf (slot-value exports 'export-alist)
-	  (loop for extern in (wasm-extern-vec-to-list exports)
+	  (loop for extern in (to-list exports)
 		for module-export in (wasm-module-exports module)
 		collect (cons (wasm-exporttype-name module-export)
 			      extern)))

@@ -74,18 +74,6 @@
 (defmethod from-wasm-extern ((extern wasm-extern) (type (eql 'wasm-extern)))
   extern)
 
-(define-wasm-vec-class extern)
-
-(defun wasm-extern-vec-to-list (extern-vec &key owner)
-  (wasm-vec-to-list extern-vec
-		    '(:struct %wasm-extern-vec-struct)
-		    #'wrap-wasm-extern
-		    :owner (or owner (owner extern-vec))))
-
-(defun list-to-wasm-extern-vec (list &key owner)
-  (list-to-wasm-vec list
-		    #'make-wasm-extern-vec
-		    (lambda (out-ptr src-ptr)
-		      (setf (cffi:mem-ref out-ptr :pointer)
-			    (%wasm-extern-copy src-ptr)))
-		    :owner owner))			       
+(define-wasm-vec-class extern ()
+  ((wrap-data-function :allocation :class
+		       :initform #'wrap-wasm-extern)))			       

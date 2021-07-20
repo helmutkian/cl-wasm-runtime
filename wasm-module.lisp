@@ -37,7 +37,7 @@
     (%wasm-module-imports module imports)
     (enable-gc imports)
     (setf (slot-value imports 'imports-list)
-	  (wasm-importtype-vec-to-list imports))
+	  (to-list imports))
     imports))
     
 
@@ -52,7 +52,7 @@
     (%wasm-module-exports module exports)
     (enable-gc exports)
     (setf (slot-value exports 'exports-list)
-	  (wasm-exporttype-vec-to-list exports))
+	  (to-list exports))
     exports))
 
 (define-wasm-object-class module ()

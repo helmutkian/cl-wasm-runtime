@@ -116,7 +116,6 @@
 		 :pointer
 		 offset))
 
-
 (defmacro do-wasm-vec (((elm-var elm-type &optional (index-var (gensym))) vec-pointer vec-type) &body body)
   (alexandria:with-gensyms (data size)
     `(let ((,data (cffi:foreign-slot-value ,vec-pointer ,vec-type 'data))
@@ -124,6 +123,14 @@
        (dotimes (,index-var ,size)
 	 (let ((,elm-var (cffi:mem-aref ,data ,elm-type ,index-var)))
 	   ,@body)))))
+
+(defun wasm-vec-to-list (vec-pointer vec-type elm-type)
+  (let ((list nil))
+    (do-wasm-vec ((elm-pointer elm-type)
+		  vec-pointer
+		  vec-type)
+      (push elm-pointer list))
+    (nreverse list)))
 
 (defmacro define-wasm-own (name)
   (let* ((parser-sym (make-object-type-parser-sym name))
@@ -148,7 +155,7 @@
     `(defclass ,class-name
 	 (,@supers ,@(unless (find-if (lambda (super) (subtypep super 'wasm-object))
 				      supers)
-			'(wasm-object)))
+		       '(wasm-object)))
        (,@slots
 	,@(unless (or (find 'delete-function slots)
 		      (assoc 'delete-function slots))
@@ -156,6 +163,45 @@
        ,@options)))	 
 
 ;;; Wasm vector high level interface
+
+(defclass wasm-vec (wasm-object)
+  ;; Metadata for translating to/from Lisp data structures to WASM vectors
+  ((vec-type :reader vec-type)
+   (data-type :reader data-type)
+   (wrap-data-function :reader wrap-data-function)
+   (new-function :reader new-function)
+   (copy-function :reader copy-function)))
+
+(defun size (vec)
+  (wasm-vec-size (pointer vec) (vec-type vec)))
+
+(defun to-list (vec)
+  (loop for elm in (wasm-vec-to-list (pointer vec)
+				     (vec-type vec)
+				     (data-type vec))
+	collect (funcall (wrap-data-function vec)
+			 elm
+			 :owner vec)))
+
+(defun from-list (list vec-class-name)
+  (let* ((size (length list))
+	 (vec-type (vec-type vec-class-name))
+	 (data-type (data-type vec-class-name))
+	 (copy-function (copy-function vec-class-name))
+	 (new-function (new-function vec-class-name)))
+    (cffi:with-foreign-objects ((arr data-type size)
+				;; Don't call wasm_..._vec_delete on src-vec
+				;; since the elements in the list are not
+				;; actually "owned" by it
+				(src-vec vec-type))
+      (loop for elm in list
+	    for i from 0
+	    do (setf (cffi:mem-aref arr data-type i)
+		     (typecase elm
+		       (wasm-object (pointer elm))
+		       (t elm))))
+      (funcall new-function src-vec size arr)
+      (funcall copy-function src-vec))))
 
 (defun make-wasm-vec-instance (class-name type &key owner)
   (enable-gc (make-instance class-name
@@ -167,8 +213,9 @@
 			    :pointer pointer
 			    :owner owner)))
 
-(defmacro define-wasm-vec-class (name)
-  (let* ((vec-name (make-symbol (format nil "~A-VEC" name)))
+(defmacro define-wasm-vec-class (name &optional supers slots &rest options)
+  (let* ((elm-type-name (make-object-type-parser-sym name))
+	 (vec-name (make-symbol (format nil "~A-VEC" name)))
 	 (struct-type-sym (alexandria:symbolicate '%wasm- vec-name '-struct))
 	 (class-name (alexandria:symbolicate 'wasm- vec-name))
 	 (make-empty-name (alexandria:symbolicate 'make-wasm- vec-name '-empty))
@@ -177,50 +224,68 @@
 	 (new-uninitialized-name (translate-wasm-name (format-wasm-cfun-name vec-name "new_uninitialized")))
 	 (make-name (alexandria:symbolicate 'make-wasm- vec-name))
 	 (new-name (translate-wasm-name (format-wasm-cfun-name vec-name "new")))
-	 (copy-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy"))))
+	 (wrap-name (alexandria:symbolicate 'wrap-wasm- vec-name))
+	 (copy-name (alexandria:symbolicate 'wasm- vec-name '-copy))
+	 (copy-cfun-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy")))
+	 (delete-name (translate-wasm-name (format-wasm-cfun-name vec-name "delete"))))
     `(progn
-       (define-wasm-object-class ,vec-name)
+       ;; MAKE-...-EMPTY
        (defun ,make-empty-name (&key owner)
 	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
 	   (,new-empty-name vec)
 	   vec))
+       ;; MAKE-...-UNINITIALIZED
        (defun ,make-uninitialized-name (size &key owner)
 	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
 	   (,new-uninitialized-name vec size)
 	   vec))
+       ;; MAKE-...
        (defun ,make-name (size init-data &key owner)
 	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
 	   (,new-name vec size init-data)
 	   vec))
-       (defun ,(alexandria:symbolicate 'wrap-wasm- vec-name) (pointer &key owner)
+       ;; WRAP-...
+       (defun ,wrap-name (pointer &key owner)
 	 (wrap-wasm-vec ',class-name pointer :owner owner))
-       (defun ,(alexandria:symbolicate 'wasm- vec-name '-copy) (src &key owner)
+       ;; COPY-...
+       (defun ,copy-name (src &key owner)
 	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
-	   (,copy-name vec src)
+	   (,copy-cfun-name vec src)
 	   vec))
-       (defun ,(alexandria:symbolicate 'wasm- vec-name '-size) (vec)
-	 (wasm-vec-size (pointer vec) '(:struct ,struct-type-sym))))))
-
-(defun wasm-vec-to-list (vec vec-type wrap-function &key owner)
-  (let ((list nil))
-    (do-wasm-vec ((elm-pointer :pointer)
-		  (if (cffi:pointerp vec) vec (pointer vec))
-		  vec-type)
-      (push (funcall wrap-function elm-pointer
-		     :owner (or owner
-				(unless (cffi:pointerp vec) vec)))
-	    list))
-    (nreverse list)))
-
-(defun list-to-wasm-vec (list vec-ctr-function elm-copy-function &key owner)
-  (let ((size (length list)))
-    (cffi:with-foreign-pointer (arr size)
-      (loop for elm in list
-	    for i from 0
-	    do (funcall elm-copy-function
-			(cffi:mem-aptr arr :pointer i)
-			(pointer elm)))
-      (funcall vec-ctr-function size arr :owner owner))))
+       (define-wasm-object-class ,vec-name
+	   (,@supers ,@(unless (find-if (lambda (super) (subtypep super 'wasm-vec))
+					supers)
+			 '(wasm-vec)))
+	 ;; WASM vector metadata
+	 (,@(remove-if (lambda (slot)
+			 (or (find (car slot) slots)
+			     (assoc (car slot) slots)))
+		       `((vec-type :allocation :class
+				   :initform '(:struct ,struct-type-sym))
+			 (data-type :allocation :class
+				    :initform ',elm-type-name)
+			 (copy-function :allocation :class
+					:initform (symbol-function ',copy-name))
+			 (new-function :allocation :class
+				       :initform (symbol-function ',new-name))))
+	  ,@slots)
+	 ,@options)
+       ;; Readers for WASM vector metadata by class name
+       (defmethod delete-function ((vec-class-name (eql ',class-name)))
+	 (declare (ignore vec-class-name))
+	 (symbol-function ',delete-name))
+       (defmethod vec-type ((vec-class-name (eql ',class-name)))
+	 (declare (ignore vec-class-name))
+	 '(:struct ,struct-type-sym))
+       (defmethod data-type ((vec-class-name (eql ',class-name)))
+	 (declare (ignore vec-class-name))
+	 ',elm-type-name)
+       (defmethod copy-function ((vec-class-name (eql ',class-name)))
+	 (declare (ignore vec-class-name))
+	 (symbol-function ',copy-name))
+       (defmethod new-function ((vec-class-name (eql ',class-name)))
+	 (declare (ignore vec-class-name))
+	 (symbol-function ',new-name)))))
 
 ;;; Byte vectors
 
@@ -229,7 +294,12 @@
 (define-wasm-vec byte)
 
 (define-wasm-object-class byte)
-(define-wasm-vec-class byte)
+
+(define-wasm-vec-class byte ()
+  ((wrap-data-function :allocation :class
+		       :initform (lambda (byte &key owner)
+				   (declare (ignore owner))
+				   byte))))
 
 (cffi:defctype %wasm-message-struct (:struct %wasm-byte-vec-struct))
 
@@ -282,7 +352,7 @@
 
 (defun wasm-byte-vec-to-string (byte-vec &key null-terminated)
   (babel:octets-to-string (wasm-byte-vec-to-octets byte-vec :null-terminated null-terminated)))
-    
+
 (defmethod cffi:translate-to-foreign ((str string) (type wasm-byte-vec-type))
   (pointer (string-to-wasm-byte-vec str)))
 
@@ -294,3 +364,4 @@
 
 (defmethod cffi:translate-to-foreign ((octets simple-array) (type wasm-name-type))
   (pointer (octets-to-wasm-byte-vec octets :null-terminated t)))
+

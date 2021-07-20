@@ -101,19 +101,6 @@
 (defun wasm-val-to-lisp (wasm-val)
   (wasm-val-value wasm-val))
   
-(define-wasm-vec-class val)
-
-(defun wasm-val-vec-to-list (val-vec)
-  (wasm-vec-to-list val-vec
-		    '(:struct %wasm-val-vec-struct)
-		    #'wrap-wasm-val
-		    :owner (owner val-vec)))
-
-(defun list-to-wasm-val-vec (list &key owner)
-  (list-to-wasm-vec list
-		    #'make-wasm-val-vec
-		    (lambda (out-ptr src-ptr)
-		      (%wasm-val-copy out-ptr src-ptr))
-		    :owner owner))
-
-
+(define-wasm-vec-class val ()
+  ((wrap-data-function :allocation :class
+		       :initform #'wrap-wasm-val)))

@@ -96,7 +96,7 @@
     (handler-case
 	(let ((host-function (host-function-store-load *host-function-store* index)))
 	  (handler-case
-	      (let* ((args-list (wasm-val-vec-to-list args))
+	      (let* ((args-list (wasm-vec-to-list args '(:struct %wasm-val-vec-struct) '%wasm-val-type))
 		     (function (host-function-callback host-function))
 		     (results-list (apply function
 					  (append (when with-environment
