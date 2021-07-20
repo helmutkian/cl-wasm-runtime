@@ -39,9 +39,18 @@
 	  (alexandria:symbolicate '* name '*)
 	  name))))
 
+;;; Generic Functions
+
+(defgeneric size (object))
+
+(defgeneric value (object))
+
 ;;; COMMON
 
+;; TODO: Move these to groveler
 (cffi:defctype %size-type :uint)
+
+(cffi:defctype %uint-32-type :uint32)
 
 (cffi:defctype %float-32-type :float)
 
@@ -172,7 +181,7 @@
    (new-function :reader new-function)
    (copy-function :reader copy-function)))
 
-(defun size (vec)
+(defmethod size ((vec wasm-vec))
   (wasm-vec-size (pointer vec) (vec-type vec)))
 
 (defun to-list (vec)

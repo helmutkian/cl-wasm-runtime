@@ -3,6 +3,9 @@
   (:use #:cl)
   (:export #:wasm-object
 	   #:wasm-delete)
+  ;; Generic functions
+  (:export #:size
+	   #:to-list)
   ;; Bytes
   (:export #:wasm-byte
 	   #:wasm-byte-vec)
@@ -64,7 +67,11 @@
   ;; Table Instances
   (:export #:wasm-table)
   ;; Memory Instances
-  (:export #:wasm-memory)
+  (:export #:wasm-memory
+	   #:bytes
+	   #:buffer
+	   #:buffer-size
+	   #:grow)
   ;; Externals
   (:export #:wasm-extern
 	   #:wasm-extern-as-func)
