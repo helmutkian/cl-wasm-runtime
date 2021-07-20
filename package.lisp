@@ -5,6 +5,7 @@
 	   #:wasm-delete)
   ;; Generic functions
   (:export #:size
+	   #:value
 	   #:to-list)
   ;; Bytes
   (:export #:wasm-byte
