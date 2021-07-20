@@ -117,8 +117,9 @@
 
 (define-wasm-object-class globaltype)
 
-(defun make-wasm-globaltype (valtype mutability-key)
+(defun make-wasm-globaltype (valtype &key mutable)
   (let* ((vtype (ensure-wasm-valtype valtype))
+	 (mutability-key (if mutable :wasm-var :wasm-const))
 	 (mutability (cffi:foreign-enum-value '%wasm-mutability-enum mutability-key))
 	 (globaltype (enable-gc (make-instance 'wasm-globaltype
 					      :pointer (%wasm-globaltype-new vtype mutability)))))

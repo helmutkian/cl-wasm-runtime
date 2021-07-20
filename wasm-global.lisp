@@ -39,3 +39,9 @@
 
 (defun wasm-global-value (global)
   (wasm-val-value (wasm-global-get global)))
+
+(defmethod (setf wasm-global-value) ((val wasm-val) (global wasm-global))
+  (%wasm-global-set global val))
+
+(defmethod (setf wasm-global-value) (val (global wasm-global))
+  (%wasm-global-set global (lisp-to-wasm-val val)))

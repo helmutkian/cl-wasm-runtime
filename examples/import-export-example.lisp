@@ -18,8 +18,7 @@
 	 (host-func (wasm-rt:make-wasm-func store
 					    host-functype
 					    callback))
-	 (host-globaltype (wasm-rt:make-wasm-globaltype :wasm-i32
-							:wasm-const))
+	 (host-globaltype (wasm-rt:make-wasm-globaltype :wasm-i32))
 	 (host-global (wasm-rt:make-wasm-global store
 						host-globaltype
 						(wasm-rt:make-wasm-val 42 :wasm-i32)))
