@@ -11,9 +11,31 @@
   :wasm-const
   :wasm-var)
 
-(cffi:defcstruct %wasm-limits-type
+(define-wasm-object-type limits)
+
+(cffi:defcstruct %wasm-limits-struct
   (min :uint32)
   (max :uint32))
+
+(defclass wasm-limits (wasm-object)
+  ((delete-function :initform #'cffi:foreign-free)))
+
+(defun make-wasm-limits (min-pages max-pages)
+  (let ((pointer (cffi:foreign-alloc '(:struct %wasm-limits-struct))))
+    (setf (cffi:foreign-slot-value pointer '(:struct %wasm-limits-struct) 'min)
+	  min-pages
+	  (cffi:foreign-slot-value pointer '(:struct %wasm-limits-struct) 'max)
+	  max-pages)
+    (enable-gc (make-instance 'wasm-limits :pointer pointer))))
+
+(defun wrap-wasm-limits (pointer &key owner)
+  (enable-gc (make-instance 'wasm-limits :pointer pointer :owner owner)))
+
+(defun min-pages (limits)
+  (cffi:foreign-slot-value limits '(:struct %wasm-limits-struct) 'min))
+
+(defun max-pages (limits)
+  (cffi:foreign-slot-value limits '(:struct %wasm-limits-struct) 'max))
 
 ;;; Value Types
 
@@ -154,9 +176,9 @@
 (define-wasm-type memorytype)
 
 (cffi:defcfun "wasm_memorytype_new" %wasm-memorytype-type ; own
-  (limits (:pointer (:struct %wasm-limits-type))))
+  (limits %wasm-limits-type))
 
-(cffi:defcfun "wasm_memorytype_limits" (:pointer (:struct %wasm-limits-type)) ; const
+(cffi:defcfun "wasm_memorytype_limits" %wasm-limits-type ; const
   (memorytype %wasm-memorytype-type))
 
 (define-wasm-object-class memorytype)
@@ -164,6 +186,10 @@
 (defun make-wasm-memorytype (limits)
   (enable-gc (make-instance 'wasm-memorytype
 			    :pointer (%wasm-memorytype-new limits))))
+
+(defun limits (memorytype)
+  (wrap-wasm-limits (%wasm-memorytype-limits memorytype)
+		    :owner (owner memorytype)))
      
 ;;; Extern Types
 

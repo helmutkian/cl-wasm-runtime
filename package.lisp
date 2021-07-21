@@ -32,8 +32,13 @@
   (:export #:wasm-tabletype
 	   #:make-wasm-tabletype)
   ;; Memory Types
-  (:export #:wasm-memorytype
-	    #:make-wasm-memorytype)
+  (:export #:wasm-limits
+	   #:make-wasm-limits
+	   #:min-pages
+	   #:max-pages
+	   #:wasm-memorytype
+	   #:make-wasm-memorytype
+	   #:limits)
   ;; Extern Types
   (:export #:wasm-externtype)
   ;; Import Types
