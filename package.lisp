@@ -53,9 +53,19 @@
 	   #:make-wasm-val)
   ;; Frames
   (:export #:wasm-frame
+	   #:func-index
+	   #:func-offset
+	   #:func-module
 	   #:wasm-frame-vec)
   ;; Traps
-  (:export #:wasm-trap)
+  (:export #:wasm-trap
+	   #:message
+	   #:origin
+	   #:trap-trace
+	   #:wasm-trap-error
+	   #:wasm-trap-error-message
+	   #:wasm-trap-error-origin
+	   #:wasm-trap-error-trace)
   ;; Foreign Objects
   (:export #:wasm-foreign)
   ;; Modules

@@ -172,12 +172,6 @@
 (defun wasm-func-type (func &key owner)
   (wrap-wasm-functype (%wasm-func-type func) :owner owner))
 
-(define-condition wasm-trap-error (error)
-  ((message :initarg :message
-	    :accessor message))
-  (:report (lambda (c s)
-	     (print (message c) s))))
-
 (defun wasm-funcall (func &rest received-args)
   ;; Wasmer does not expose its internal trampoline to the C API. Therefore calling host functions
   ;; as WASM functions is not supported and will result in a panic. We could just call the host function
@@ -208,10 +202,10 @@
 	     (%wasm-val-vec-new-uninitialized results num-results)
 	     (let ((trap (%wasm-func-call func args results)))
 	       (unless (null? trap)
-		 ;; TODO add trap data
-		 (cffi:with-foreign-object (bytes '(:struct %wasm-byte-vec-struct))
-		   (%wasm-trap-message trap bytes)
-		   (error 'wasm-trap-error :message (wasm-byte-vec-to-string bytes))))
+		 (error 'wasm-trap-error
+			:message (message trap)
+			:origin (origin trap)
+			:trace (trap-trace trap)))
 	       (loop for i below num-results
 		     collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
 		       into result-values

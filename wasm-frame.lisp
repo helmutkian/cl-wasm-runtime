@@ -25,6 +25,18 @@
 			    :pointer pointer
 			    :owner owner)))
 
+(defun func-index (frame)
+  "FUNC-INDEX returns the function index in the original WebAssembly module that the frame corresponds to."
+  (%wasm-frame-func-index frame))
+
+(defun func-offset (frame)
+  "FUNC-OFFSET returns the byte offset from the beginning of the function in the original WebAssembly file to the instruction this frame points to."
+  (%wasm-frame-func-offset frame))
+
+(defun module-offset (frame)
+  "MODULE-OFFSET returns the byte offset from the beginning fo the original WebAssembly file to the instruction this frame points to."
+  (%wasm-frame-module-offset frame))
+
 (define-wasm-vec-class frame ()
   ((wrap-data-function :allocation :class
 		       :initform #'wrap-wasm-frame)))
