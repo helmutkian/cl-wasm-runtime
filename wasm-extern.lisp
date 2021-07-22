@@ -26,16 +26,16 @@
 (define-wasm-extern-conversion memory)
 
 (define-wasm-object-class extern ()
-  ((kind :reader wasm-extern-kind)
-   (externtype :reader wasm-extern-type)))
+  ((kind :reader wasm-extern-kind)))
 
 (defun wrap-wasm-extern (pointer &key owner)
   (let ((extern (enable-gc (make-instance 'wasm-extern :pointer pointer :owner owner))))
     (setf (slot-value extern 'kind)
-	  (wasm-externkind-to-key (%wasm-extern-kind pointer))
-	  (slot-value extern 'externtype)
-	  (wrap-wasm-externtype (%wasm-extern-type pointer) :owner (owner extern)))
+	  (wasm-externkind-to-key (%wasm-extern-kind pointer)))
     extern))
+
+(defmethod extern-type ((extern wasm-extern))
+  (%wasm-extern-type extern))
 
 (defmacro define-to-wasm-extern-method (type)
   (let* ((class-name (alexandria:symbolicate 'wasm- type))

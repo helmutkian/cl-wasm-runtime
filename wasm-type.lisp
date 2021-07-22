@@ -37,6 +37,12 @@
 (defun max-pages (limits)
   (cffi:foreign-slot-value limits '(:struct %wasm-limits-struct) 'max))
 
+;;; Generic Function
+
+(defgeneric value-type (wasm-val-type))
+
+(defgeneric extern-type (wasm-extern-type))
+
 ;;; Value Types
 
 (define-wasm-type valtype)
@@ -82,6 +88,9 @@
   (etypecase valtype-or-key
     (wasm-valtype valtype-or-key)
     (keyword (make-wasm-valtype valtype-or-key)))) 
+
+(defmethod value-type :around ((object wasm-object))
+  (enable-gc (wrap-wasm-valtype (call-next-method) :owner (owner object))))
 
 (define-wasm-vec-class valtype ()
   ((wrap-data-function :allocation :class
@@ -148,6 +157,9 @@
     (setf (owner vtype) globaltype)
     globaltype))
 
+(defmethod value-type ((globaltype wasm-globaltype))
+  (%wasm-globaltype-content globaltype))
+
 ;;; Table Types
 
 (define-wasm-type tabletype)
@@ -162,7 +174,7 @@
 (cffi:defcfun "wasm_tabletype_limits" %wasm-limits-type
   (tabletype %wasm-tabletype-type))
 
-(define-wasm-object-class globaltype)
+(define-wasm-object-class tabletype)
 
 (defun make-wasm-tabletype (elements limits)
   (let* ((valtype (ensure-wasm-valtype elements))
@@ -170,6 +182,9 @@
 					      :pointer (%wasm-tabletype-new valtype limits)))))
     (setf (owner valtype) tabletype)
     tabletype))
+
+(defmethod value-type ((tabletype wasm-tabletype))
+  (%wasm-tabletype-element tabletype))
 
 ;;; Memory Types
 
@@ -245,6 +260,9 @@
 			    :owner owner
 			    :kind (wasm-externkind-to-key (%wasm-externtype-kind pointer)))))
 
+(defmethod extern-type :around ((object wasm-object))
+  (enable-gc (wrap-wasm-externtype (call-next-method) :owner (owner object))))
+
 ;;; Import Types
 
 (define-wasm-type importtype)
@@ -267,9 +285,7 @@
   ((namespace :initarg :namespace
 	      :reader namespace)
    (name :initarg :name
-	 :reader name)
-   (externtype :initarg :externtype
-	       :reader externtype)))
+	 :reader name)))
 
 (defun make-wasm-importtype (namespace name externtype)
   (let ((importtype (enable-gc (make-instance 'wasm-importtype
@@ -287,11 +303,11 @@
     (setf (slot-value importtype 'namespace)
 	  (wasm-byte-vec-to-string (%wasm-importtype-namespace importtype))
 	  (slot-value importtype 'name)
-	  (wasm-byte-vec-to-string (%wasm-importtype-name importtype))
-	  (slot-value importtype 'externtype)
-	  (wrap-wasm-externtype (%wasm-importtype-type importtype)
-				:owner (owner importtype)))
+	  (wasm-byte-vec-to-string (%wasm-importtype-name importtype)))
     importtype))
+
+(defmethod extern-type ((importtype wasm-importtype))
+  (%wasm-importtype-type importtype))
       
 (define-wasm-vec-class importtype ()
   ((wrap-data-function :allocation :class
@@ -313,9 +329,7 @@
 
 (define-wasm-object-class exporttype ()
   ((name :initarg :name
-	 :reader wasm-exporttype-name)
-   (externtype :initarg :externtype
-	       :reader wasm-exporttype-externtype)))
+	 :reader wasm-exporttype-name)))
 
 (defun make-wasm-exporttype (name externtype)
   (let ((exporttype (enable-gc (make-instance 'wasm-exporttype
@@ -331,11 +345,11 @@
 				    :owner owner)))
     (enable-gc exporttype)
     (setf (slot-value exporttype 'name)
-	  (wasm-byte-vec-to-string (%wasm-exporttype-name pointer))
-	  (slot-value exporttype 'externtype)
-	  (wrap-wasm-externtype (%wasm-exporttype-type pointer)
-				:owner (owner exporttype)))
+	  (wasm-byte-vec-to-string (%wasm-exporttype-name pointer)))
     exporttype))
+
+(defmethod extern-type ((exporttype wasm-exporttype))
+  (%wasm-exporttype-type exporttype))
 
 (define-wasm-vec-class exporttype ()
   ((wrap-data-function :allocation :class
