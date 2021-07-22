@@ -154,12 +154,12 @@
 
 (cffi:defcfun "wasm_tabletype_new" %wasm-tabletype-type ; own
   (elements %wasm-valtype-type) ; own
-  (limits (:pointer (:struct %wasm-limits-type))))
+  (limits %wasm-limits-type))
 
 (cffi:defcfun "wasm_tabletype_element" %wasm-valtype-type ; const
   (tabletype %wasm-tabletype-type))
 
-(cffi:defcfun "wasm_tabletype_limits" (:pointer (:struct %wasm-limits-type))
+(cffi:defcfun "wasm_tabletype_limits" %wasm-limits-type
   (tabletype %wasm-tabletype-type))
 
 (define-wasm-object-class globaltype)

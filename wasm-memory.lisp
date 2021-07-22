@@ -5,7 +5,7 @@
 (cffi:define-foreign-type %wasm-memory-pages ()
   ()
   (:simple-parser %wasm-memory-pages-type)
-  (:actual-type %unint-32-type))
+  (:actual-type %uint-32-type))
 
 (defconstant +memory-page-size+ #x10000)
 
