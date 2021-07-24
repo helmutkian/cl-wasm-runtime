@@ -98,3 +98,16 @@
 		:depends-on ("package"
 			     "common"
 			     "runtime"))))
+
+
+(asdf:defsystem "cl-wasm-runtime/test"
+  :depends-on ("cl-wasm-runtime"
+	       "fiveam")
+  :pathname "test/"
+  :components ((:file "package")
+	       (:file "suite"
+		:depends-on ("package"))
+	       (:file "test-export-type"
+		:depends-on ("package" "suite"))
+	       (:file "test-engine"
+		:depends-on ("package" "suite"))))
