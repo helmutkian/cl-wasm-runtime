@@ -7,7 +7,8 @@
   (:export #:size
 	   #:value
 	   #:data-aref
-	   #:to-list)
+	   #:to-list
+	   #:kind)
   ;; Bytes
   (:export #:wasm-byte
 	   #:wasm-byte-vec
@@ -29,7 +30,9 @@
 	   #:make-wasm-valtype)
   ;; Function Types
   (:export #:wasm-functype
-	   #:make-wasm-functype)
+	   #:make-wasm-functype
+	   #:params
+	   #:results)
   ;; Global Types
   (:export #:wasm-globaltype
 	   #:make-wasm-globaltype)
@@ -45,11 +48,18 @@
 	   #:make-wasm-memorytype
 	   #:limits)
   ;; Extern Types
-  (:export #:wasm-externtype)
+  (:export #:wasm-externtype
+	   #:extern-type
+	   #:to-wasm-extern-type
+	   #:to-wasm-func-type
+	   #:to-wasm-memory-type
+	   #:to-wasm-global-type
+	   #:to-wasm-table-type)
   ;; Import Types
   (:export #:wasm-importtype)
   ;; Export Types
-  (:export #:wasm-exporttype)
+  (:export #:wasm-exporttype
+	   #:make-wasm-exporttype)
   ;; References
   (:export #:wasm-ref)
   ;; Values
@@ -75,7 +85,9 @@
   (:export #:wasm-foreign)
   ;; Modules
   (:export #:wasm-module
-	   #:make-wasm-module)
+	   #:make-wasm-module
+	   #:load-wasm
+	   #:load-wasm-module)
   ;; Function Instances
   (:export #:wasm-func
 	   #:make-wasm-callback
@@ -109,10 +121,7 @@
 	   #:wasm-instance
 	   #:make-wasm-instance)
   ;; WAT
-  (:export #:wat-to-wasm)
-  ;; High-level interface
-  (:export #:read-wasm-module
-	    #:binary-to-wasm-module))
+  (:export #:wat-to-wasm))
 	    
 	    
 	    

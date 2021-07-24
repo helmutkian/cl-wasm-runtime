@@ -126,10 +126,10 @@
 			    :pointer pointer
 			    :owner owner)))
 
-(defun wasm-functype-params (functype)
+(defun params (functype)
   (wrap-wasm-valtype-vec (%wasm-functype-params functype) :owner (owner functype)))
 
-(defun wasm-functype-results (functype)
+(defun results (functype)
   (wrap-wasm-valtype-vec (%wasm-functype-results functype) :owner (owner functype)))
 
 ;;; Global Types
@@ -157,6 +157,11 @@
     (setf (owner vtype) globaltype)
     globaltype))
 
+(defun wrap-wasm-globaltype (pointer &key owner)
+  (enable-gc (make-instance 'wasm-globaltype
+			    :pointer pointer
+			    :owner owner)))
+
 (defmethod value-type ((globaltype wasm-globaltype))
   (%wasm-globaltype-content globaltype))
 
@@ -183,6 +188,11 @@
     (setf (owner valtype) tabletype)
     tabletype))
 
+(defun wrap-wasm-tabletype (pointer &key owner)
+  (enable-gc (make-instance 'wasm-tabletype
+			    :pointer pointer
+			    :owner owner)))
+
 (defmethod value-type ((tabletype wasm-tabletype))
   (%wasm-tabletype-element tabletype))
 
@@ -201,6 +211,11 @@
 (defun make-wasm-memorytype (limits)
   (enable-gc (make-instance 'wasm-memorytype
 			    :pointer (%wasm-memorytype-new limits))))
+
+(defun wrap-wasm-memorytype (pointer &key owner)
+  (enable-gc (make-instance 'wasm-memorytype
+			    :pointer pointer
+			    :owner owner)))
 
 (defun limits (memorytype)
   (wrap-wasm-limits (%wasm-memorytype-limits memorytype)
@@ -252,7 +267,7 @@
 
 (define-wasm-object-class externtype ()
   ((kind :initarg :kind
-	 :reader wasm-externtype-kind)))
+	 :reader kind)))
 
 (defun wrap-wasm-externtype (pointer &key owner)
   (enable-gc (make-instance 'wasm-externtype
@@ -262,6 +277,45 @@
 
 (defmethod extern-type :around ((object wasm-object))
   (enable-gc (wrap-wasm-externtype (call-next-method) :owner (owner object))))
+
+(defgeneric to-wasm-extern-type (wasm-type))
+
+(defmethod to-wasm-extern-type :around ((wasm-type wasm-object))
+  (typecase wasm-type
+    (wasm-externtype wasm-type)
+    (t (enable-gc (wrap-wasm-externtype (call-next-method) :owner (owner wasm-type))))))
+
+(defmethod to-wasm-extern-type ((extern-type wasm-externtype))
+  extern-type)
+
+(defmethod to-wasm-extern-type ((functype wasm-functype))
+  (%wasm-functype-as-externtype functype))
+
+(defmethod to-wasm-extern-type ((globaltype wasm-globaltype))
+  (%wasm-globaltype-as-externtype globaltype))
+
+(defmethod to-wasm-extern-type ((memorytype wasm-memorytype))
+  (%wasm-memorytype-as-externtype memorytype))
+
+(defmethod to-wasm-extern-type ((tabletype wasm-tabletype))
+  (%wasm-tabletype-as-externtype tabletype))
+
+(defun to-wasm-func-type (extern-type)
+  (wrap-wasm-functype (%wasm-externtype-as-functype extern-type)
+		      :owner (owner extern-type)))
+
+(defun to-wasm-global-type (extern-type)
+  (wrap-wasm-globaltype (%wasm-externtype-as-globaltype extern-type)
+			:owner (owner extern-type)))
+
+(defun to-wasm-memory-type (extern-type)
+  (wrap-wasm-memorytype (%wasm-externtype-as-memorytype extern-type)
+			:owner (owner extern-type)))
+
+(defun to-wasm-table-type (extern-type)
+  (wrap-wasm-tabletype (%wasm-externtype-as-tabletype extern-type)
+		       :owner (owner extern-type)))
+
 
 ;;; Import Types
 
@@ -327,26 +381,26 @@
 (cffi:defcfun "wasm_exporttype_type" %wasm-externtype-type ; const
   (exporttype %wasm-exporttype-type))
 
-(define-wasm-object-class exporttype ()
-  ((name :initarg :name
-	 :reader wasm-exporttype-name)))
+(define-wasm-object-class exporttype)
 
-(defun make-wasm-exporttype (name externtype)
-  (let ((exporttype (enable-gc (make-instance 'wasm-exporttype
-					      :pointer (%wasm-exporttype-new name externtype)
-					      :name name
-					      :externtype externtype))))
-    (setf (owner name) exporttype
-	  (owner externtype) exporttype)))
+(defun make-wasm-exporttype (name externtype-able)
+  (cffi:with-foreign-object (name-bytes '(:struct %wasm-byte-vec-struct))
+    (%wasm-byte-vec-copy name-bytes
+			 (etypecase name
+			   (wasm-byte-vec name)
+			   (string (string-to-wasm-byte-vec name))))
+    (let* ((externtype (to-wasm-extern-type externtype-able))
+	   (pointer (%wasm-exporttype-new name-bytes (%wasm-externtype-copy externtype))))
+      (enable-gc (make-instance 'wasm-exporttype :pointer pointer)))))
 					     
 (defun wrap-wasm-exporttype (pointer &key owner)
   (let ((exporttype (make-instance 'wasm-exporttype
 				    :pointer pointer
 				    :owner owner)))
-    (enable-gc exporttype)
-    (setf (slot-value exporttype 'name)
-	  (wasm-byte-vec-to-string (%wasm-exporttype-name pointer)))
-    exporttype))
+    (enable-gc exporttype)))
+
+(defmethod name ((export-type wasm-exporttype))
+  (wasm-byte-vec-to-string (%wasm-exporttype-name export-type)))
 
 (defmethod extern-type ((exporttype wasm-exporttype))
   (%wasm-exporttype-type exporttype))

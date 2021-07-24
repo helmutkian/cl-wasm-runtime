@@ -78,3 +78,13 @@
 (defun wasm-module-imports (module)
   (slot-value (slot-value module 'imports)
 	      'imports-list))
+
+(defun load-wasm (path)
+  (with-open-file (in path :element-type 'fast-io:octet)
+    (fast-io:with-fast-input (buf nil in)
+      (let ((bin (fast-io:make-octet-vector (file-length in))))
+	(fast-io:fast-read-sequence bin buf)
+	(octets-to-wasm-byte-vec bin)))))
+
+(defun load-wasm-module (store path)
+  (make-wasm-module store (load-wasm path)))

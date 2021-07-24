@@ -180,7 +180,7 @@
     (error "Calling host functions is not supported."))
   (let* ((functype (wasm-func-type func))
 	 (num-received-args (length received-args))
-	 (params (wasm-functype-params functype))
+	 (params (params functype))
 	 (num-params  (%wasm-func-param-arity func))
 	 (num-results (%wasm-func-result-arity func)))
     (when (not (= num-received-args num-params))

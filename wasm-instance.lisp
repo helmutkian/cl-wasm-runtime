@@ -78,7 +78,7 @@
     (setf (slot-value exports 'export-alist)
 	  (loop for extern in (to-list exports)
 		for module-export in (wasm-module-exports module)
-		collect (cons (wasm-exporttype-name module-export)
+		collect (cons (name module-export)
 			      extern)))
     
     exports))
@@ -93,12 +93,12 @@
 	   :reader module)
    (exports :reader exports)))
 
-(defun make-wasm-instance (store module imports &optional traps)
+(defun make-wasm-instance (store module  &optional imports traps)
   (let ((instance (enable-gc
 		   (make-instance 'wasm-instance
 				  :pointer (%wasm-instance-new store
 							       module
-							       imports
+							       (or imports (make-wasm-imports module))
 							       (if (null? traps) (cffi:null-pointer) traps))
 				  :parent store
 				  :module module))))
