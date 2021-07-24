@@ -6,10 +6,15 @@
   ;; Generic functions
   (:export #:size
 	   #:value
+	   #:data-aref
 	   #:to-list)
   ;; Bytes
   (:export #:wasm-byte
-	   #:wasm-byte-vec)
+	   #:wasm-byte-vec
+	   #:wasm-byte-vec-to-string
+	   #:wasm-byte-vec-to-octets
+	   #:string-to-wasm-byte-vec
+	   #:octets-to-wasm-byte-vec)
   ;; Config
   (:export #:wasm-config
 	   #:make-wasm-config)

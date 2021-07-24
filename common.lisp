@@ -184,6 +184,26 @@
 (defmethod size ((vec wasm-vec))
   (wasm-vec-size (pointer vec) (vec-type vec)))
 
+(defun data (vec)
+  (enable-gc (cffi:foreign-slot-value (pointer vec)
+				      (vec-type vec)
+				      'data)))
+
+(defun data-aref (vec index)
+  (if (>= index (size vec))
+      (error "Out of bounds.")
+      (funcall (wrap-data-function vec)
+	       (cffi:mem-aref (pointer (data vec)) (data-type vec) index))))
+
+(defmethod (setf data-aref) (value index (vec wasm-vec))
+  (if (>= index (size vec))
+      (error "Out of bounds.")
+      (setf (cffi:mem-aref (pointer (data vec)) (data-type vec) index)
+	    (typecase value
+	      (wasm-object (pointer value))
+	      (t value)))))
+
+
 (defun to-list (vec)
   (loop for elm in (wasm-vec-to-list (pointer vec)
 				     (vec-type vec)
@@ -309,6 +329,7 @@
 		       :initform (lambda (byte &key owner)
 				   (declare (ignore owner))
 				   byte))))
+
 
 (cffi:defctype %wasm-message-struct (:struct %wasm-byte-vec-struct))
 
