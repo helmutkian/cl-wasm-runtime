@@ -27,7 +27,8 @@
 	   #:make-wasm-store)
   ;; Value Types
   (:export #:wasm-valtype
-	   #:make-wasm-valtype)
+	   #:make-wasm-valtype
+	   #:value-type)
   ;; Function Types
   (:export #:wasm-functype
 	   #:make-wasm-functype
@@ -35,15 +36,16 @@
 	   #:results)
   ;; Global Types
   (:export #:wasm-globaltype
-	   #:make-wasm-globaltype)
+	   #:make-wasm-globaltype
+	   #:mutable?)
   ;; Table Types
   (:export #:wasm-tabletype
 	   #:make-wasm-tabletype)
   ;; Memory Types
   (:export #:wasm-limits
 	   #:make-wasm-limits
-	   #:min-pages
-	   #:max-pages
+	   #:minimum
+	   #:maximum
 	   #:wasm-memorytype
 	   #:make-wasm-memorytype
 	   #:limits)

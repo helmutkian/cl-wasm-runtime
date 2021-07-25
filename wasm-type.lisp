@@ -20,28 +20,33 @@
 (defclass wasm-limits (wasm-object)
   ((delete-function :initform #'cffi:foreign-free)))
 
-(defun make-wasm-limits (min-pages max-pages)
+(defun make-wasm-limits (min max)
   (let ((pointer (cffi:foreign-alloc '(:struct %wasm-limits-struct))))
     (setf (cffi:foreign-slot-value pointer '(:struct %wasm-limits-struct) 'min)
-	  min-pages
+	  min
 	  (cffi:foreign-slot-value pointer '(:struct %wasm-limits-struct) 'max)
-	  max-pages)
+	  max)
     (enable-gc (make-instance 'wasm-limits :pointer pointer))))
 
 (defun wrap-wasm-limits (pointer &key owner)
   (enable-gc (make-instance 'wasm-limits :pointer pointer :owner owner)))
 
-(defun min-pages (limits)
-  (cffi:foreign-slot-value limits '(:struct %wasm-limits-struct) 'min))
+(defun minimum (limits)
+  (cffi:foreign-slot-value (pointer limits) '(:struct %wasm-limits-struct) 'min))
 
-(defun max-pages (limits)
-  (cffi:foreign-slot-value limits '(:struct %wasm-limits-struct) 'max))
+(defun maximum (limits)
+  (cffi:foreign-slot-value (pointer limits) '(:struct %wasm-limits-struct) 'max))
 
 ;;; Generic Function
 
 (defgeneric value-type (wasm-val-type))
 
 (defgeneric extern-type (wasm-extern-type))
+
+(defgeneric limits (limitable))
+
+(defmethod limits :around ((limitable wasm-object))
+  (enable-gc (wrap-wasm-limits (call-next-method) :owner (owner limitable))))
 
 ;;; Value Types
 
@@ -143,7 +148,7 @@
 (cffi:defcfun "wasm_globaltype_content" %wasm-valtype-type ; const
   (globaltype %wasm-globaltype-type))
 
-(cffi:defcfun "wasm_global_type_mutability" %wasm-mutability-type ; const
+(cffi:defcfun "wasm_globaltype_mutability" %wasm-mutability-type ; const
   (globaltype %wasm-globaltype-type))
 
 (define-wasm-object-class globaltype)
@@ -164,6 +169,10 @@
 
 (defmethod value-type ((globaltype wasm-globaltype))
   (%wasm-globaltype-content globaltype))
+
+(defun mutable? (global-type)
+  (eql (%wasm-globaltype-mutability global-type)
+       (cffi:foreign-enum-value '%wasm-mutability-enum :wasm-var)))
 
 ;;; Table Types
 
@@ -196,6 +205,10 @@
 (defmethod value-type ((tabletype wasm-tabletype))
   (%wasm-tabletype-element tabletype))
 
+(defmethod limits ((table-type wasm-tabletype))
+  (%wasm-tabletype-limits table-type))
+
+
 ;;; Memory Types
 
 (define-wasm-type memorytype)
@@ -217,9 +230,8 @@
 			    :pointer pointer
 			    :owner owner)))
 
-(defun limits (memorytype)
-  (wrap-wasm-limits (%wasm-memorytype-limits memorytype)
-		    :owner (owner memorytype)))
+(defmethod limits ((memorytype wasm-memorytype))
+  (%wasm-memorytype-limits memorytype))
      
 ;;; Extern Types
 
