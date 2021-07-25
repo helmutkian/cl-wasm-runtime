@@ -110,4 +110,8 @@
 	       (:file "test-export-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-engine"
+		:depends-on ("package" "suite"))
+	       (:file "test-func-type"
+		:depends-on ("package" "suite"))
+	       (:file "test-global"
 		:depends-on ("package" "suite"))))

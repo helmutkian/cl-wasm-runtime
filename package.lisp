@@ -37,7 +37,8 @@
   ;; Global Types
   (:export #:wasm-globaltype
 	   #:make-wasm-globaltype
-	   #:mutable?)
+	   #:mutable?
+	   #:value)
   ;; Table Types
   (:export #:wasm-tabletype
 	   #:make-wasm-tabletype)
@@ -98,7 +99,8 @@
 	   #:wasm-funcall)
   ;; Global Instances
   (:export #:wasm-global
-	   #:make-wasm-global)
+	   #:make-wasm-global
+	   #:global-type)
   ;; Table Instances
   (:export #:wasm-table)
   ;; Memory Instances

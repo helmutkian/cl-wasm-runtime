@@ -29,19 +29,20 @@
 			    :pointer pointer
 			    :owner owner)))
 
-(defun wasm-global-get (global)
+(defun global-type (global)
+  (wrap-wasm-globaltype (%wasm-global-type global) :owner (owner global)))
+
+(defun value (global)
   (let ((val-pointer (cffi:foreign-alloc '(:struct %wasm-val-struct))))
     (%wasm-global-get global val-pointer)
-    (wrap-wasm-val val-pointer)))
+    (wasm-val-value val-pointer)))
 
-(defun wasm-global-set (global val)
+(defmethod (setf value) :before (val (global wasm-global))
+  (unless (mutable? (global-type global))
+    (error "Global value is not mutable, cannot set new value")))
+
+(defmethod (setf value) ((val wasm-val) (global wasm-global))
   (%wasm-global-set global val))
 
-(defun wasm-global-value (global)
-  (wasm-val-value (wasm-global-get global)))
-
-(defmethod (setf wasm-global-value) ((val wasm-val) (global wasm-global))
-  (%wasm-global-set global val))
-
-(defmethod (setf wasm-global-value) (val (global wasm-global))
+(defmethod (setf value) (val (global wasm-global))
   (%wasm-global-set global (lisp-to-wasm-val val)))

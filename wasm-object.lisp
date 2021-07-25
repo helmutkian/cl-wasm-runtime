@@ -6,7 +6,6 @@
 
 (defclass wasm-object ()
   ((pointer :initarg :pointer
-	    :accessor pointer
 	    :initform (cffi:null-pointer)
 	    :documentation "A CFFI pointer from the WASM runtime.")
    (delete-function :initarg :delete-function
@@ -23,6 +22,19 @@
    (finalizer-data :accessor finalizer-data
 		   :initform (list :owned? nil :disposed? nil :dependencies nil)
 		   :documentation "Plist of data used to finalize the WASM object. :OWNED? is a T/NIL flag indicating whether another object 'owns' this object, and if not NIL, then this object should not be disposed. :DISPOSED? is a T/NIL flag to determine if the object has been disposed of already. :DEPENDENCIES are WASM objects that should be disposed of before this one.")))
+
+(deftype pointer ()
+  `(or wasm-object (satisfies cffi:pointerp)))
+
+(defgeneric pointer (object))
+
+(defmethod pointer ((object wasm-object))
+  (slot-value object 'pointer))
+
+(defmethod pointer (object)
+  (if (cffi:pointerp object)
+      object
+      (error 'type-error :expected-type 'pointer :datum object)))
 
 (defgeneric owner (object))
 
