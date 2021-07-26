@@ -324,6 +324,18 @@
 
 (define-wasm-object-class byte)
 
+(defmacro with-wasm-byte-vecs (bindings &body body)
+  "Creates copies of WASM-BYTE-VEC objects or STRINGs converted to WASM-BYTE-VEC objects within a dynamic extent. Useful for passing WASM-BYTE-VECs or STRINGSs into WASM object constructors that will 'own' the vector. Pointers assigned are not valid outside this dynamic extent!"
+  `(cffi:with-foreign-objects ,(loop for binding in bindings
+				     collect `(,(first binding) '(:struct %wasm-byte-vec-struct)))
+     ,@(loop for binding in bindings
+	     collect `(%wasm-byte-vec-copy ,(first binding)
+					   (let ((string-or-byte-vec ,(second binding)))
+					     (etypecase string-or-byte-vec
+					       (wasm-byte-vec string-or-byte-vec)
+					       (string (string-to-wasm-byte-vec string-or-byte-vec))))))
+     ,@body))
+
 (define-wasm-vec-class byte ()
   ((wrap-data-function :allocation :class
 		       :initform (lambda (byte &key owner)

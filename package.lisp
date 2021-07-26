@@ -59,7 +59,9 @@
 	   #:to-wasm-global-type
 	   #:to-wasm-table-type)
   ;; Import Types
-  (:export #:wasm-importtype)
+  (:export #:wasm-importtype
+	   #:make-wasm-importtype
+	   #:namespace)
   ;; Export Types
   (:export #:wasm-exporttype
 	   #:make-wasm-exporttype)

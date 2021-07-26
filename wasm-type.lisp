@@ -333,7 +333,7 @@
 
 (define-wasm-type importtype)
 
-(cffi:defcfun ("wasm_importtype_new" %wasm-importtype-new) %wasm-importtype-type ; own
+(cffi:defcfun "wasm_importtype_new" %wasm-importtype-type ; own
   (namespace %wasm-name-type) ; own
   (name %wasm-name-type) ; own
   (externtype %wasm-externtype-type)) ; own
@@ -341,36 +341,32 @@
 (cffi:defcfun ("wasm_importtype_module" %wasm-importtype-namespace) %wasm-name-type ; const
   (importtype %wasm-importtype-type))
 
-(cffi:defcfun ("wasm_importtype_name" %wasm-importtype-name) %wasm-name-type ; const
+(cffi:defcfun "wasm_importtype_name" %wasm-name-type ; const
   (importtype %wasm-importtype-type))
 
-(cffi:defcfun ("wasm_importtype_type" %wasm-importtype-type) %wasm-externtype-type ; const
+(cffi:defcfun "wasm_importtype_type" %wasm-externtype-type ; const
   (importtype %wasm-importtype-type))
 
-(define-wasm-object-class importtype ()
-  ((namespace :initarg :namespace
-	      :reader namespace)
-   (name :initarg :name
-	 :reader name)))
+(define-wasm-object-class importtype)
 
-(defun make-wasm-importtype (namespace name externtype)
-  (let ((importtype (enable-gc (make-instance 'wasm-importtype
-					      :pointer (%wasm-importtype-new namespace name externtype)
-					      :parent namespace))))
-    (setf (owner namespace) importtype
-	  (owner name) importtype
-	  (owner externtype) importtype)
-    importtype))
+(defun make-wasm-importtype (namespace name extern-type-able)
+  (with-wasm-byte-vecs ((namespace-bytes namespace)
+			(name-bytes name))
+    (let* ((extern-type (%wasm-externtype-copy (to-wasm-extern-type extern-type-able)))
+	   (pointer (%wasm-importtype-new namespace-bytes name-bytes extern-type)))
+      (enable-gc (make-instance 'wasm-importtype :pointer pointer)))))
+
 
 (defun wrap-wasm-importtype (pointer &key owner)
-  (let ((importtype (make-instance 'wasm-importtype
-				   :pointer pointer
-				   :owner owner)))
-    (setf (slot-value importtype 'namespace)
-	  (wasm-byte-vec-to-string (%wasm-importtype-namespace importtype))
-	  (slot-value importtype 'name)
-	  (wasm-byte-vec-to-string (%wasm-importtype-name importtype)))
-    importtype))
+  (make-instance 'wasm-importtype
+		 :pointer pointer
+		 :owner owner))
+
+(defmethod name ((import-type wasm-importtype))
+  (wasm-byte-vec-to-string (%wasm-importtype-name import-type)))
+
+(defun namespace (import-type)
+  (wasm-byte-vec-to-string (%wasm-importtype-namespace import-type)))
 
 (defmethod extern-type ((importtype wasm-importtype))
   (%wasm-importtype-type importtype))
@@ -396,11 +392,7 @@
 (define-wasm-object-class exporttype)
 
 (defun make-wasm-exporttype (name externtype-able)
-  (cffi:with-foreign-object (name-bytes '(:struct %wasm-byte-vec-struct))
-    (%wasm-byte-vec-copy name-bytes
-			 (etypecase name
-			   (wasm-byte-vec name)
-			   (string (string-to-wasm-byte-vec name))))
+  (with-wasm-byte-vecs ((name-bytes name))
     (let* ((externtype (to-wasm-extern-type externtype-able))
 	   (pointer (%wasm-exporttype-new name-bytes (%wasm-externtype-copy externtype))))
       (enable-gc (make-instance 'wasm-exporttype :pointer pointer)))))
