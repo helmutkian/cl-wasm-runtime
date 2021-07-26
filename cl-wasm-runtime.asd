@@ -114,4 +114,6 @@
 	       (:file "test-func-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-global"
+		:depends-on ("package" "suite"))
+	       (:file "test-global-type"
 		:depends-on ("package" "suite"))))
