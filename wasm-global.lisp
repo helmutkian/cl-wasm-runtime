@@ -32,7 +32,7 @@
 (defun global-type (global)
   (wrap-wasm-globaltype (%wasm-global-type global) :owner (owner global)))
 
-(defmethod value (global)
+(defmethod value ((global wasm-global))
   (let ((val-pointer (cffi:foreign-alloc '(:struct %wasm-val-struct))))
     (%wasm-global-get global val-pointer)
     (wasm-val-value val-pointer)))
