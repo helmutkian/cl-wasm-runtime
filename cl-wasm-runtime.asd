@@ -118,4 +118,6 @@
 	       (:file "test-global-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-import-type"
+		:depends-on ("package" "suite"))
+	       (:file "test-instance"
 		:depends-on ("package" "suite"))))
