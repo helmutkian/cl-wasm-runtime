@@ -22,18 +22,10 @@
 	 (host-global (wasm-rt:make-wasm-global store
 						host-globaltype
 						(wasm-rt:make-wasm-val 42 :wasm-i32)))
-	 (empty-namespace
-	   (wasm-rt:make-wasm-namespace ""
-					(wasm-rt:make-wasm-import "host_function"
-								  host-func)))
-	 (env-namespace
-	   (wasm-rt:make-wasm-namespace "env"
-					(wasm-rt:make-wasm-import "host_global"
-								  host-global)))
 	 (imports
-	   (wasm-rt:make-wasm-imports module
-				      empty-namespace
-				      env-namespace))
+	   (wasm-rt:import-modules module
+				   ("" ("host_function" host-func))
+				   ("env" ("host_global" host-global))))
 	 (instance (wasm-rt:make-wasm-instance store module imports))
 	 (exports (wasm-rt:exports instance))
 	 (guest-func (wasm-rt:get-export exports "guest_function" 'wasm-rt:wasm-func))

@@ -62,7 +62,16 @@
     (change-class extern-vec
 		  'wasm-imports
 		  :namespaces namespace-alist)))
-	 
+
+(defmacro import-modules (module &rest namespace-specs)
+  `(make-wasm-imports
+    ,module
+    ,@(loop for (namespace . import-spec) in namespace-specs
+	    collect `(make-wasm-namespace
+		      ,namespace
+		      ,@(loop for (name externable) in import-spec
+			      collect `(make-wasm-import ,name ,externable))))))
+
      
 (defclass wasm-instance-exports (wasm-extern-vec)
   ((export-alist :reader exports-alist)))
