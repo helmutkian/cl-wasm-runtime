@@ -119,6 +119,7 @@
 	   #:make-wasm-imports
 	   #:make-wasm-namespace
 	   #:make-wasm-import
+	   #:import-modules
 	   #:name
 	   #:extern
 	   #:imports
