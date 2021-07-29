@@ -92,7 +92,7 @@
     (internal-dispose (finalizer-data object)
 		      (slot-value object 'pointer) ; By-pass generic function
 		      (delete-function object))
-    (setf (pointer object) nil)))
+    (setf (slot-value object 'pointer) nil)))
 
 (defmethod enable-gc ((object wasm-object))
   (let ((pointer (slot-value object 'pointer)) ; By-pass generic function
