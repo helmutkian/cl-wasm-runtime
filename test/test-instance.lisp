@@ -50,6 +50,30 @@
       (5am:signals t
 	(make-wasm-instance store module (make-wasm-imports module namespace))))))
 
+(5am:test test-instance-import-modules
+  (5am:finishes
+    (let* ((engine (make-wasm-engine))
+	   (store (make-wasm-store engine))
+	   (wat "(module
+                   (func (import \"env\" \"function\"))
+                   (func (import \"foo\" \"function\")))")
+	   (module (wat-to-wasm store wat))
+	   (func1 (make-wasm-func store
+				 (make-wasm-functype nil nil)
+				 (make-wasm-callback (lambda (&rest args)
+						       (declare (ignore args))
+						       nil))))
+	   (func2 (make-wasm-func store
+				 (make-wasm-functype nil nil)
+				 (make-wasm-callback (lambda (&rest args)
+						       (declare (ignore args))
+						       nil))))
+	   (imports (import-modules module
+				    ("env" ("function" func1))
+				    ("foo" ("function" func2)))))
+      (make-wasm-instance store module imports))))
+
+
 (5am:test test-instance-traps
   (5am:finishes
     (let* ((engine (make-wasm-engine))
