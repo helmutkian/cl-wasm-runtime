@@ -120,4 +120,6 @@
 	       (:file "test-import-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-instance"
+		:depends-on ("package" "suite"))
+	       (:file "test-limits"
 		:depends-on ("package" "suite"))))
