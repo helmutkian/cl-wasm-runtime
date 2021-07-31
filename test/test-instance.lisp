@@ -9,7 +9,7 @@
   (5am:finishes
     (let* ((engine (make-wasm-engine))
 	   (store (make-wasm-store engine))
-	   (module (wat-to-wasm store "(module)")))
+	   (module (wat-to-wasm-module store "(module)")))
       (make-wasm-instance store module))))
 
 (5am:test test-instance-exports
@@ -21,7 +21,7 @@
                   (global (export \"global\") i32 (i32.const 7))
                   (table (export \"table\") 0 funcref)
                   (memory (export \"memory\") 1))")
-	  (module (wat-to-wasm store wat))
+	  (module (wat-to-wasm-module store wat))
 	  (instance (make-wasm-instance store module))
 	  (exports (exports instance))
 	  (func (get-export exports "function" 'wasm-func))
@@ -40,7 +40,7 @@
 	   (wat "(module
                    (func (import \"missing\" \"function\"))
                    (func (import \"exists\" \"function\")))")
-	   (module (wat-to-wasm store wat))
+	   (module (wat-to-wasm-module store wat))
 	   (func (make-wasm-func store
 				 (make-wasm-functype nil nil)
 				 (make-wasm-callback (lambda (&rest args)
@@ -57,7 +57,7 @@
 	   (wat "(module
                    (func (import \"env\" \"function\"))
                    (func (import \"foo\" \"function\")))")
-	   (module (wat-to-wasm store wat))
+	   (module (wat-to-wasm-module store wat))
 	   (func1 (make-wasm-func store
 				 (make-wasm-functype nil nil)
 				 (make-wasm-callback (lambda (&rest args)
@@ -82,7 +82,7 @@
 		   (start $start_f)
 		   (type $start_t (func))
 		   (func $start_f (type $start_t) unreachable))")
-	   (module (wat-to-wasm store wat)))
+	   (module (wat-to-wasm-module store wat)))
       ;; It's not possible to access the actual WASM trap object
       ;; with the common WASM C API. Need to use engine-specific API.
       ;; The common WASM C API will just signal a generic foreign trap.

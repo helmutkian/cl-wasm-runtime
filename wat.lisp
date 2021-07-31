@@ -4,7 +4,14 @@
   (wat %wasm-byte-vec-type)
   (out %wasm-byte-vec-type))
 
-(defun wat-to-wasm (store wat-str)
+(defun wat-to-wasm (wat-str)
+  (cffi:with-foreign-object (wasm-bytes '%wasm-byte-vec-type)
+    (unwind-protect (progn
+		      (%wat-to-wasm wat-str wasm-bytes)
+		      (wasm-byte-vec-copy wasm-bytes))
+      (%wasm-byte-vec-delete wasm-bytes))))
+
+(defun wat-to-wasm-module (store wat-str)
   (cffi:with-foreign-object (wasm-bytes '%wasm-byte-vec-type)
     (unwind-protect (progn
 		      (%wat-to-wasm wat-str wasm-bytes)

@@ -134,7 +134,8 @@
 	   #:wasm-instance
 	   #:make-wasm-instance)
   ;; WAT
-  (:export #:wat-to-wasm))
+  (:export #:wat-to-wasm
+	   #:wat-to-wasm-module))
 	    
 	    
 	    

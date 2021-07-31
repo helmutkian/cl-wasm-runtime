@@ -21,7 +21,7 @@
 (5am:def-fixture global-instance-fixture (&optional (wat *test-global-wat*))
   (let* ((engine (make-wasm-engine))
 	 (store (make-wasm-store engine))
-	 (module (wat-to-wasm store wat))
+	 (module (wat-to-wasm-module store wat))
 	 (*test-global-instance* (make-wasm-instance store module)))
     (&body)))
 

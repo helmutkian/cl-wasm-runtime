@@ -14,7 +14,7 @@
 (defun run-early-exit-example ()
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
-	 (module (wasm-rt:wat-to-wasm store *early-exit-wat*))
+	 (module (wasm-rt:wat-to-wasm-module store *early-exit-wat*))
 	 (host-functype (wasm-rt:make-wasm-functype nil nil))
 	 (callback (wasm-rt:make-wasm-callback (lambda (&rest args)
 						 (declare (ignore args))

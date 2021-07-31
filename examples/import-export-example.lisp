@@ -10,7 +10,7 @@
 (defun run-import-export-example ()
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
-	 (module (wasm-rt:wat-to-wasm store *import-export-example-wat*))
+	 (module (wasm-rt:wat-to-wasm-module store *import-export-example-wat*))
 	 (host-functype (wasm-rt:make-wasm-functype nil '(:wasm-i32)))
 	 (callback (wasm-rt:make-wasm-callback (lambda (&rest args)
 						 (declare (ignore args))

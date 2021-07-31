@@ -10,7 +10,7 @@
 (defun run-instance-example ()
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
-	 (module (wasm-rt:wat-to-wasm store *add-one-wat*))
+	 (module (wasm-rt:wat-to-wasm-module store *add-one-wat*))
 	 (imports (wasm-rt:make-wasm-imports module))
 	 (instance (wasm-rt:make-wasm-instance store module imports))
 	 (add-one (wasm-rt:get-export (wasm-rt:exports instance)

@@ -18,7 +18,7 @@
 (defun run-memory-example ()
   (let* ((engine (wasm-rt:make-wasm-engine))
 	 (store (wasm-rt:make-wasm-store engine))
-	 (module (wasm-rt:wat-to-wasm store *memory-wat*))
+	 (module (wasm-rt:wat-to-wasm-module store *memory-wat*))
 	 (imports (wasm-rt:make-wasm-imports module))
 	 (instance (wasm-rt:make-wasm-instance store module imports))
 	 (exports (wasm-rt:exports instance))
