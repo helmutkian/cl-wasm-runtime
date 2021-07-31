@@ -46,7 +46,7 @@
 				for name = (name namespace)
 				for externs-alist = (imports namespace)
 				collect (cons name externs-alist)))
-	 (extern-vec (loop for module-import in (wasm-module-imports module)
+	 (extern-vec (loop for module-import in (imports module)
 			   for namespace = (namespace module-import)
 			   for name = (name module-import)
 			   for import = (cdr (assoc name
@@ -86,7 +86,7 @@
     (enable-gc exports)
     (setf (slot-value exports 'export-alist)
 	  (loop for extern in (to-list exports)
-		for module-export in (wasm-module-exports module)
+		for module-export in (exports module)
 		collect (cons (name module-export)
 			      extern)))
     
@@ -100,7 +100,10 @@
 (define-wasm-object-class instance ()
   ((module :initarg :module
 	   :reader module)
-   (exports :reader exports)))
+   (exports)))
+
+(defmethod exports ((instance wasm-instance))
+  (slot-value instance 'exports))
 
 (defun make-wasm-instance (store module  &optional imports traps)
   (let ((instance (enable-gc

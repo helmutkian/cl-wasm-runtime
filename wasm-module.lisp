@@ -71,11 +71,11 @@
 	  (make-wasm-module-imports module))
     module))
 
-(defun wasm-module-exports (module)
+(defmethod exports ((module wasm-module))
   (slot-value (slot-value module 'exports)
 	      'exports-list))
 
-(defun wasm-module-imports (module)
+(defmethod imports ((module wasm-module))
   (slot-value (slot-value module 'imports)
 	      'imports-list))
 

@@ -45,6 +45,10 @@
 
 (defgeneric value (object))
 
+(defgeneric imports (object))
+
+(defgeneric exports (object))
+
 ;;; COMMON
 
 ;; TODO: Move these to groveler
