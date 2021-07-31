@@ -59,17 +59,19 @@
   ((exports)
    (imports)))
 
-(defun make-wasm-module (store binary)
-  (let* ((pointer (%wasm-module-new store binary))
-	 (module (make-instance 'wasm-module
-				:pointer pointer
-				:parent store)))
+(defun wrap-wasm-module (store pointer)
+  (let ((module (make-instance 'wasm-module
+			       :pointer pointer
+			       :parent store)))
     (enable-gc module)
     (setf (slot-value module 'exports)
 	  (make-wasm-module-exports module)
 	  (slot-value module 'imports)
 	  (make-wasm-module-imports module))
     module))
+
+(defun make-wasm-module (store binary)
+  (wrap-wasm-module store (%wasm-module-new store binary)))
 
 (defmethod exports ((module wasm-module))
   (slot-value (slot-value module 'exports)
@@ -78,6 +80,14 @@
 (defmethod imports ((module wasm-module))
   (slot-value (slot-value module 'imports)
 	      'imports-list))
+
+(defun serialize (module)
+  (cffi:with-foreign-object (byte-vec '(:struct %wasm-byte-vec-struct))
+    (%wasm-module-serialize module byte-vec)
+    (wasm-byte-vec-copy byte-vec)))
+
+(defun deserialize (store byte-vec)
+  (wrap-wasm-module store (%wasm-module-deserialize store byte-vec)))
 
 (defun load-wasm (path)
   (with-open-file (in path :element-type 'fast-io:octet)

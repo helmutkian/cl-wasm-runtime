@@ -91,6 +91,8 @@
   ;; Modules
   (:export #:wasm-module
 	   #:make-wasm-module
+	   #:serialize
+	   #:deserialize
 	   #:load-wasm
 	   #:load-wasm-module)
   ;; Function Instances
