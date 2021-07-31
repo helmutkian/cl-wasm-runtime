@@ -124,4 +124,6 @@
 	       (:file "test-limits"
 		:depends-on ("package" "suite"))
 	       (:file "test-memory"
+		:depends-on ("package" "suite"))
+	       (:file "test-memory-type"
 		:depends-on ("package" "suite"))))
