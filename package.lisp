@@ -107,10 +107,16 @@
   (:export #:wasm-table)
   ;; Memory Instances
   (:export #:wasm-memory
+	   #:make-wasm-memory
+	   #:wasm-memory-buffer
+	   #:buffer-aref
+	   #:buffer-to-octets
+	   #:buffer-to-string
 	   #:bytes
 	   #:buffer
 	   #:buffer-size
-	   #:grow)
+	   #:grow
+	   #:memory-type)
   ;; Externals
   (:export #:wasm-extern
 	   #:wasm-extern-as-func)

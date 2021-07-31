@@ -122,4 +122,6 @@
 	       (:file "test-instance"
 		:depends-on ("package" "suite"))
 	       (:file "test-limits"
+		:depends-on ("package" "suite"))
+	       (:file "test-memory"
 		:depends-on ("package" "suite"))))

@@ -19,7 +19,7 @@
 (cffi:defcfun "wasm_memory_type" %wasm-memorytype-type ;own
   (memory %wasm-memory-type))
 
-(cffi:defcfun "wasm_memory_data" %wasm-byte-type
+(cffi:defcfun "wasm_memory_data" (:pointer %wasm-byte-type)
   (memory %wasm-memory-type))
 
 (cffi:defcfun "wasm_memory_data_size" %size-type
@@ -34,6 +34,41 @@
 
 (define-wasm-object-class memory)
 
+(defclass wasm-memory-buffer ()
+  ((pointer :initarg :pointer
+	    :reader pointer)
+   (memory :initarg :memory
+	   :reader memory)))
+
+(defmethod size ((buffer wasm-memory-buffer))
+  (buffer-size (memory buffer)))
+
+(defun buffer-aref (buffer index)
+  (unless (< index (size buffer))
+    (error "Out of bounds"))
+  (cffi:mem-aref (pointer buffer) '%wasm-byte-type index))
+
+(defmethod (setf buffer-aref) (value (buffer wasm-memory-buffer) index)
+  (unless (< index (size buffer))
+    (error "Out of bounds"))
+  (setf (cffi:mem-aref (pointer buffer) '%wasm-byte-type index) value))
+
+(defun buffer-to-octets (buffer &key (start 0) end)
+  (let ((size (size buffer)))
+    (when (or (< start 0)
+	      (> start (1- size))
+	      (and end
+		   (or (< end start)
+		       (> end size))))
+      (error "Out of bounds"))
+    (fast-io:with-fast-output (out :vector)
+      (loop for i from start below (or end size)
+	    for byte = (buffer-aref buffer i)
+	    do (fast-io:fast-write-byte byte out)))))
+
+(defun buffer-to-string (buffer &key (start 0) end)
+  (babel:octets-to-string (buffer-to-octets buffer :start start :end end)))
+
 (defun make-wasm-memory (store memorttype)
   (enable-gc (make-instance 'wasm-memory
 			    :pointer (%wasm-memory-new store memorttype))))
@@ -44,7 +79,9 @@
 			    :owner owner)))
 
 (defun buffer (memory)
-  (%wasm-memory-data memory))
+  (make-instance 'wasm-memory-buffer
+		 :pointer (%wasm-memory-data memory)
+		 :memory memory))
 
 (defun buffer-size (memory)
   (%wasm-memory-data-size memory))
@@ -54,3 +91,6 @@
 
 (defun grow (memory pages-delta)
   (%wasm-memory-grow memory pages-delta))
+
+(defun memory-type (memory)
+  (enable-gc (wrap-wasm-memorytype (%wasm-memory-type memory))))
