@@ -192,7 +192,7 @@
 
 (defun make-wasm-tabletype (elements limits)
   (let* ((valtype (ensure-wasm-valtype elements))
-	 (tabletype (enable-gc (make-instance 'wasm-globaltype
+	 (tabletype (enable-gc (make-instance 'wasm-tabletype
 					      :pointer (%wasm-tabletype-new valtype limits)))))
     (setf (owner valtype) tabletype)
     tabletype))
