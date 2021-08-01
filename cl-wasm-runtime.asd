@@ -128,4 +128,6 @@
 	       (:file "test-memory-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-module"
+		:depends-on ("package" "suite"))
+	       (:file "test-store"
 		:depends-on ("package" "suite"))))
