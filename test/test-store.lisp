@@ -1,4 +1,4 @@
-(in-pacakge #:cl-wasm-runtime.test)
+(in-package #:cl-wasm-runtime.test)
 
 (5am:def-suite cl-wasm-runtime.test.store
   :in cl-wasm-runtime.test)
