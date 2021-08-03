@@ -107,6 +107,8 @@
   :components ((:file "package")
 	       (:file "suite"
 		:depends-on ("package"))
+	       (:file "test-byte-vec"
+		:depends-on ("package" "suite"))
 	       (:file "test-export-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-engine"
