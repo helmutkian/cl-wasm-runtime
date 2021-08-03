@@ -36,7 +36,7 @@
 
 (defun origin (trap)
   "ORIGIN returns the top frame of the WebAssembly stack responsible for this trap."
-  (%wasm-trap-origin trap))
+  (wrap-wasm-frame (%wasm-trap-origin trap)))
 
 (defun trap-trace (trap)
   "TRAP-TRACE returns the trace of the WebAssembly frames for this trap."

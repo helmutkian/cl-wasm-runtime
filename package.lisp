@@ -2,7 +2,8 @@
   (:nicknames #:wasm-rt)
   (:use #:cl)
   (:export #:wasm-object
-	   #:wasm-delete)
+	   #:wasm-delete
+	   #:null?)
   ;; Generic functions
   (:export #:size
 	   #:value
@@ -79,6 +80,7 @@
 	   #:wasm-frame-vec)
   ;; Traps
   (:export #:wasm-trap
+	   #:make-wasm-trap
 	   #:message
 	   #:origin
 	   #:trap-trace
