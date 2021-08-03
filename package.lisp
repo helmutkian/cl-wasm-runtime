@@ -4,11 +4,12 @@
   (:export #:wasm-object
 	   #:wasm-delete
 	   #:null?)
-  ;; Generic functions
+  ;; Generic functiodns
   (:export #:size
 	   #:value
 	   #:data-aref
 	   #:to-list
+	   #:from-list
 	   #:kind)
   ;; Bytes
   (:export #:wasm-byte
@@ -29,7 +30,9 @@
   ;; Value Types
   (:export #:wasm-valtype
 	   #:make-wasm-valtype
-	   #:value-type)
+	   #:value-type
+	   #:reference?
+	   #:number?)
   ;; Function Types
   (:export #:wasm-functype
 	   #:make-wasm-functype

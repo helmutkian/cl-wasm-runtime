@@ -134,4 +134,6 @@
 	       (:file "test-table-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-trap"
+		:depends-on ("package" "suite"))
+	       (:file "test-val-type"
 		:depends-on ("package" "suite"))))

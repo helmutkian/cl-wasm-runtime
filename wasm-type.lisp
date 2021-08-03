@@ -97,6 +97,16 @@
 (defmethod value-type :around ((object wasm-object))
   (enable-gc (wrap-wasm-valtype (call-next-method) :owner (owner object))))
 
+(defun reference? (val-type-or-key)
+  (>= (cffi:foreign-enum-value '%wasm-val-kind-enum
+			       (etypecase val-type-or-key
+				 (keyword val-type-or-key)
+				 (wasm-valtype (kind val-type-or-key))))
+      (cffi:foreign-enum-value '%wasm-val-kind-enum :wasm-any-ref)))
+
+(defun number? (val-type-or-key)
+  (not (reference? val-type-or-key)))
+
 (define-wasm-vec-class valtype ()
   ((wrap-data-function :allocation :class
 		       :initform #'wrap-wasm-valtype)))
