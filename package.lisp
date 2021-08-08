@@ -105,7 +105,9 @@
 	   #:make-wasm-callback
 	   #:make-wasm-func
 	   #:wasm-func-error
-	   #:wasm-funcall)
+	   #:wasm-funcall
+	   #:param-arity
+	   #:result-arity)
   ;; Global Instances
   (:export #:wasm-global
 	   #:make-wasm-global

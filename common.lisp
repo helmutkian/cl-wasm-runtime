@@ -119,14 +119,14 @@
 (defun wasm-vec-size (pointer type)
   (cffi:foreign-slot-value pointer type 'size))
 
-(defun wasm-vec-aref (pointer vec-type offset)
+(defun wasm-vec-aref (pointer vec-type offset &optional (element-type :pointer))
   (cffi:mem-aref (cffi:foreign-slot-value pointer vec-type 'data)
-		 :pointer
+		 element-type
 		 offset))
 
-(defun wasm-vec-aptr (pointer vec-type offset)
+(defun wasm-vec-aptr (pointer vec-type offset &optional (element-type :pointer))
   (cffi:mem-aptr (cffi:foreign-slot-value pointer vec-type 'data)
-		 :pointer
+		 element-type
 		 offset))
 
 (defmacro do-wasm-vec (((elm-var elm-type &optional (index-var (gensym))) vec-pointer vec-type) &body body)

@@ -207,8 +207,17 @@
 			:origin (origin trap)
 			:trace (trap-trace trap)))
 	       (loop for i below num-results
-		     collect (wasm-val-type-value (wasm-vec-aptr results '(:struct %wasm-val-vec-struct) i))
+		     collect (wasm-val-type-value (wasm-vec-aptr results
+								 '(:struct %wasm-val-vec-struct)
+								 i
+								 '(:struct %wasm-val-struct)))
 		       into result-values
 		     finally (return (values-list result-values)))))
 	(%wasm-val-vec-delete results)
 	(%wasm-val-vec-delete args)))))
+
+(defun param-arity (func)
+  (%wasm-func-param-arity func))
+
+(defun result-arity (func)
+  (%wasm-func-result-arity func))
