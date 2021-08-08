@@ -96,7 +96,11 @@
     (handler-case
 	(let ((host-function (host-function-store-load *host-function-store* index)))
 	  (handler-case
-	      (let* ((args-list (wasm-vec-to-list args '(:struct %wasm-val-vec-struct) '%wasm-val-type))
+	      (let* ((args-list (loop for i below (wasm-vec-size args '(:struct %wasm-val-vec-struct))
+				      collect (wasm-vec-aptr args
+							     '(:struct %wasm-val-vec-struct)
+							     i
+							     '(:struct %wasm-val-struct))))
 		     (function (host-function-callback host-function))
 		     (results-list (apply function
 					  (append (when with-environment
@@ -108,7 +112,7 @@
 		    (error (format nil "Expected ~a results, but host function returned ~a" size num-results)))
 		  (loop for result in results-list
 			for i from 0
-			do (%wasm-val-copy (cffi:mem-aptr data :pointer i) result))
+			do (%wasm-val-copy (cffi:mem-aptr data '(:struct %wasm-val-struct) i) result))
 		  (cffi:null-pointer)))
 	    (t (c)
 	      (make-wasm-trap (host-function-store host-function)
