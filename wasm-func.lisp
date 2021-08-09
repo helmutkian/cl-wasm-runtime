@@ -138,11 +138,14 @@
     ;; NOOP
   (declare (ignore env)))
 
-(defun make-wasm-callback (function &key with-wasm-val-arguments)
-  (lambda (&rest args-val-list)
-    (let ((args (if with-wasm-val-arguments
-		    args-val-list
-		    (mapcar #'wasm-val-to-lisp args-val-list))))
+(defun make-wasm-callback (function &key wasm-val-arguments environment)
+  (lambda (env-or-val &rest args-val-list)
+    (let* ((env (and environment (list env-or-val)))
+	   (vals (if env args-val-list (cons env-or-val args-val-list)))
+	   (args (append env
+			 (if wasm-val-arguments
+			     vals
+			     (mapcar #'wasm-val-to-lisp vals)))))
       (loop for result in (multiple-value-list (apply function args))
 	    collect (typecase result
 		      (wasm-val result)
