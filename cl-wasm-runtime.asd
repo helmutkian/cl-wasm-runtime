@@ -113,6 +113,8 @@
 		:depends-on ("package" "suite"))
 	       (:file "test-engine"
 		:depends-on ("package" "suite"))
+	       (:file "test-func"
+		:depends-on ("package" "suite"))
 	       (:file "test-func-type"
 		:depends-on ("package" "suite"))
 	       (:file "test-global"
