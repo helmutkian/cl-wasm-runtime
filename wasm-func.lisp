@@ -144,7 +144,7 @@
 	   (vals (if env args-val-list (cons env-or-val args-val-list)))
 	   (args (append env
 			 (if wasm-val-arguments
-			     vals
+			     (mapcar #'wasm-val-copy vals)
 			     (mapcar #'wasm-val-to-lisp vals)))))
       (loop for result in (multiple-value-list (apply function args))
 	    collect (typecase result

@@ -69,6 +69,9 @@
 						  '(:struct %wasm-val-struct)
 						  'kind))))
 
+(defmethod kind ((val wasm-val))
+  (wasm-val-kind val))
+
 (defun wasm-val-value (wasm-val)
   (unless (null? (pointer wasm-val))
     (let ((kind-key (wasm-val-kind wasm-val)))
@@ -78,10 +81,18 @@
 			       '(:union %wasm-val-union)
 			       (wasm-val-type-kind-of kind-key)))))
 
+(defmethod value ((val wasm-val))
+  (wasm-val-value val))
+
 (defun wrap-wasm-val (pointer &key owner)
   (enable-gc (make-instance 'wasm-val
 			    :pointer pointer
 			    :owner owner)))
+
+(defun wasm-val-copy (wasm-val)
+  (let ((copy-pointer (cffi:foreign-alloc '(:struct %wasm-val-struct))))
+    (%wasm-val-copy copy-pointer wasm-val)
+    (wrap-wasm-val copy-pointer)))
 			      
 
 ;; TODO: Translate more types
