@@ -102,7 +102,6 @@
 	   #:load-wasm-module)
   ;; Function Instances
   (:export #:wasm-func
-	   #:make-wasm-callback
 	   #:make-wasm-func
 	   #:wasm-func-error
 	   #:wasm-funcall

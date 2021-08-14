@@ -61,7 +61,7 @@
 	     (func-type (make-wasm-functype '(:wasm-i32 :wasm-i32) '(:wasm-i32)))
 	     (host-func (make-wasm-func *store*
 					func-type
-					(make-wasm-callback (lambda (x y) (+ x y)))))
+					(lambda (x y) (+ x y))))
 	     (instance (make-wasm-instance *store*
 					   module
 					   (import-modules module
@@ -82,11 +82,11 @@
 	     (func-type (make-wasm-functype '(:wasm-i32 :wasm-i32) '(:wasm-i32)))
 	     (host-func (make-wasm-func *store*
 					func-type
-					(make-wasm-callback (lambda (x y)
-							      (5am:is (eql :wasm-i32 (kind x)))
-							      (5am:is (eql :wasm-i32 (kind y)))
-							      (+ (value x) (value y)))
-							    :wasm-val-arguments t)))
+					(lambda (x y)
+					  (5am:is (eql :wasm-i32 (kind x)))
+					  (5am:is (eql :wasm-i32 (kind y)))
+					  (+ (value x) (value y)))
+					:wasm-val-args t))
 	     (instance (make-wasm-instance *store*
 					   module
 					   (import-modules module
@@ -107,9 +107,8 @@
 	     (func-type (make-wasm-functype '(:wasm-i32 :wasm-i32) '(:wasm-i32)))
 	     (host-func (make-wasm-func *store*
 					func-type
-					(make-wasm-callback (lambda (x y)
-							      (make-wasm-val (+ x y)
-									     :wasm-i32)))))
+				        (lambda (x y)
+					  (make-wasm-val (+ x y) :wasm-i32))))
 	     (instance (make-wasm-instance *store*
 					   module
 					   (import-modules module
@@ -118,7 +117,7 @@
 	(5am:is (= 23 (wasm-funcall add-one 22)))))))
 
 
-(5am:test test-host-func-with-env
+(5am:test test-host-func-with-environment
   (5am:finishes
     (5am:with-fixture engine-store-fixture ()
       (let* ((wat "(module
@@ -131,11 +130,10 @@
 	     (env '(:instance nil :answer 22))
 	     (host-func (make-wasm-func *store*
 					(make-wasm-functype '(:wasm-i32 :wasm-i32) '(:wasm-i32))
-					(make-wasm-callback (lambda (e x y)
-							      (5am:is-false (null (getf e :instance)))
-							      (+ x y (getf e :answer)))
-							    :environment t)
-					env))
+					(lambda (e x y)
+					  (5am:is-false (null (getf e :instance)))
+					  (+ x y (getf e :answer)))
+					:environment env))
 	     (imports (import-modules module
 				      ("math" ("sum" host-func))))
 	     (instance (make-wasm-instance *store* module imports)))
@@ -155,9 +153,9 @@
 	     (module (wat-to-wasm-module *store* wat))
 	     (host-func (make-wasm-func *store*
 					(make-wasm-functype '(:wasm-i32 :wasm-i32) '(:wasm-i32))
-					(make-wasm-callback (lambda (&rest args)
-							      (declare (ignore args))
-							      (error "whoops")))))
+					(lambda (&rest args)
+					  (declare (ignore args))
+					  (error "whoops"))))
 	     (imports (import-modules module
 				      ("math" ("sum" host-func))))
 	     (instance (make-wasm-instance *store* module imports))

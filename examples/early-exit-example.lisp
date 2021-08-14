@@ -16,9 +16,9 @@
 	 (store (wasm-rt:make-wasm-store engine))
 	 (module (wasm-rt:wat-to-wasm-module store *early-exit-wat*))
 	 (host-functype (wasm-rt:make-wasm-functype nil nil))
-	 (callback (wasm-rt:make-wasm-callback (lambda (&rest args)
-						 (declare (ignore args))
-						 (error "EARLY EXIT!"))))
+	 (callback (lambda (&rest args)
+		     (declare (ignore args))
+		     (error "EARLY EXIT!")))
 	 (host-func (wasm-rt:make-wasm-func store host-functype callback))
 	 (env-namespace (wasm-rt:make-wasm-namespace "env"
 						     (wasm-rt:make-wasm-import "early_exit"

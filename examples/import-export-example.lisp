@@ -12,9 +12,9 @@
 	 (store (wasm-rt:make-wasm-store engine))
 	 (module (wasm-rt:wat-to-wasm-module store *import-export-example-wat*))
 	 (host-functype (wasm-rt:make-wasm-functype nil '(:wasm-i32)))
-	 (callback (wasm-rt:make-wasm-callback (lambda (&rest args)
-						 (declare (ignore args))
-						 42)))
+	 (callback (lambda (&rest args)
+		     (declare (ignore args))
+		     42))
 	 (host-func (wasm-rt:make-wasm-func store
 					    host-functype
 					    callback))

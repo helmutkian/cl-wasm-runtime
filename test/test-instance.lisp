@@ -43,9 +43,9 @@
 	   (module (wat-to-wasm-module store wat))
 	   (func (make-wasm-func store
 				 (make-wasm-functype nil nil)
-				 (make-wasm-callback (lambda (&rest args)
-						       (declare (ignore args))
-						       nil))))
+				 (lambda (&rest args)
+				   (declare (ignore args))
+				   nil)))
 	   (namespace (make-wasm-namespace "exists" (make-wasm-import "function" func))))
       (5am:signals t
 	(make-wasm-instance store module (make-wasm-imports module namespace))))))
@@ -60,14 +60,14 @@
 	   (module (wat-to-wasm-module store wat))
 	   (func1 (make-wasm-func store
 				 (make-wasm-functype nil nil)
-				 (make-wasm-callback (lambda (&rest args)
-						       (declare (ignore args))
-						       nil))))
+				 (lambda (&rest args)
+				   (declare (ignore args))
+				   nil)))
 	   (func2 (make-wasm-func store
 				 (make-wasm-functype nil nil)
-				 (make-wasm-callback (lambda (&rest args)
-						       (declare (ignore args))
-						       nil))))
+				 (lambda (&rest args)
+				   (declare (ignore args))
+				   nil)))
 	   (imports (import-modules module
 				    ("env" ("function" func1))
 				    ("foo" ("function" func2)))))

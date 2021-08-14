@@ -138,12 +138,12 @@
     ;; NOOP
   (declare (ignore env)))
 
-(defun make-wasm-callback (function &key wasm-val-arguments environment)
+(defun make-wasm-callback (function &key wasm-val-args environment)
   (lambda (env-or-val &rest args-val-list)
     (let* ((env (and environment (list env-or-val)))
 	   (vals (if env args-val-list (cons env-or-val args-val-list)))
 	   (args (append env
-			 (if wasm-val-arguments
+			 (if wasm-val-args
 			     (mapcar #'wasm-val-copy vals)
 			     (mapcar #'wasm-val-to-lisp vals)))))
       (loop for result in (multiple-value-list (apply function args))
@@ -151,13 +151,16 @@
 		      (wasm-val result)
 		      (t (lisp-to-wasm-val result)))))))
 	    
-(defun make-wasm-func (store functype callback &optional env)
-  (let* ((host-function (make-host-function :store store :callback callback :user-env env))
+(defun make-wasm-func (store functype function &key environment wasm-val-args)
+  (let* ((callback (make-wasm-callback function
+				       :environment (and environment t)
+				       :wasm-val-args wasm-val-args))
+	 (host-function (make-host-function :store store :callback callback :user-env environment))
 	 (index (host-function-store-save *host-function-store* host-function))
 	 (function-env (make-function-environment store index))
 	 (pointer (%wasm-func-new-with-env store
 					   functype
-					   (if env
+					   (if environment
 					       (cffi:callback function-with-environment-trampoline)
 					       (cffi:callback function-trampoline))
 					   (pointer function-env)
