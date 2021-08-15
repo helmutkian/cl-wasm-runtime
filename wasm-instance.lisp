@@ -58,7 +58,7 @@
 			     do (error (format nil "Missing import: \"~a\".\"~a\"." namespace name))
 			   end
 			   collect import into externs-list
-			   finally (return (from-list externs-list 'wasm-extern-vec)))))
+			   finally (return (wasm-extern-vec-from-list externs-list)))))
     (change-class extern-vec
 		  'wasm-imports
 		  :namespaces namespace-alist)))

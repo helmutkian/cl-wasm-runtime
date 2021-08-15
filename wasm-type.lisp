@@ -128,8 +128,8 @@
 (define-wasm-object-class functype)
 
 (defun make-wasm-functype (params-list results-list)
-  (let* ((params (from-list (mapcar #'ensure-wasm-valtype params-list) 'wasm-valtype-vec))
-	 (results (from-list (mapcar #'ensure-wasm-valtype results-list) 'wasm-valtype-vec))
+  (let* ((params (wasm-valtype-vec-from-list (mapcar #'ensure-wasm-valtype params-list)))
+	 (results (wasm-valtype-vec-from-list (mapcar #'ensure-wasm-valtype results-list)))
 	 (functype (enable-gc (make-instance 'wasm-functype
 					    :pointer (%wasm-functype-new params results)))))
     (setf (owner params) functype

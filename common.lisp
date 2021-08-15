@@ -216,26 +216,6 @@
 			 elm
 			 :owner vec)))
 
-(defun from-list (list vec-class-name)
-  (let* ((size (length list))
-	 (vec-type (vec-type vec-class-name))
-	 (data-type (data-type vec-class-name))
-	 (copy-function (copy-function vec-class-name))
-	 (new-function (new-function vec-class-name)))
-    (cffi:with-foreign-objects ((arr data-type size)
-				;; Don't call wasm_..._vec_delete on src-vec
-				;; since the elements in the list are not
-				;; actually "owned" by it
-				(src-vec vec-type))
-      (loop for elm in list
-	    for i from 0
-	    do (setf (cffi:mem-aref arr data-type i)
-		     (typecase elm
-		       (wasm-object (pointer elm))
-		       (t elm))))
-      (funcall new-function src-vec size arr)
-      (funcall copy-function src-vec))))
-
 (defun make-wasm-vec-instance (class-name type &key owner)
   (enable-gc (make-instance class-name
 			    :pointer (cffi:foreign-alloc type)
@@ -259,8 +239,7 @@
 	 (new-name (translate-wasm-name (format-wasm-cfun-name vec-name "new")))
 	 (wrap-name (alexandria:symbolicate 'wrap-wasm- vec-name))
 	 (copy-name (alexandria:symbolicate 'wasm- vec-name '-copy))
-	 (copy-cfun-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy")))
-	 (delete-name (translate-wasm-name (format-wasm-cfun-name vec-name "delete"))))
+	 (copy-cfun-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy"))))
     `(progn
        ;; MAKE-...-EMPTY
        (defun ,make-empty-name (&key owner)
@@ -303,22 +282,25 @@
 				       :initform (symbol-function ',new-name))))
 	  ,@slots)
 	 ,@options)
-       ;; Readers for WASM vector metadata by class name
-       (defmethod delete-function ((vec-class-name (eql ',class-name)))
-	 (declare (ignore vec-class-name))
-	 (symbol-function ',delete-name))
-       (defmethod vec-type ((vec-class-name (eql ',class-name)))
-	 (declare (ignore vec-class-name))
-	 '(:struct ,struct-type-sym))
-       (defmethod data-type ((vec-class-name (eql ',class-name)))
-	 (declare (ignore vec-class-name))
-	 ',elm-type-name)
-       (defmethod copy-function ((vec-class-name (eql ',class-name)))
-	 (declare (ignore vec-class-name))
-	 (symbol-function ',copy-name))
-       (defmethod new-function ((vec-class-name (eql ',class-name)))
-	 (declare (ignore vec-class-name))
-	 (symbol-function ',new-name)))))
+       (defun ,(alexandria:symbolicate class-name '-from-list) (list)
+	 (let ((size (length list))
+	       (vec-type '(:struct ,struct-type-sym))
+	       (data-type ',elm-type-name)
+	       (copy-function (symbol-function ',copy-name))
+	       (new-function (symbol-function ',new-name)))
+	   (cffi:with-foreign-objects ((arr data-type size)
+				       ;; Don't call wasm_..._vec_delete on src-vec
+				       ;; since the elements in the list are not
+				       ;; actually "owned" by it
+				       (src-vec vec-type))
+	     (loop for elm in list
+		   for i from 0
+		   do (setf (cffi:mem-aref arr data-type i)
+			    (typecase elm
+			      (wasm-object (pointer elm))
+			      (t elm))))
+	     (funcall new-function src-vec size arr)
+	     (funcall copy-function src-vec)))))))
 
 ;;; Byte vectors
 
