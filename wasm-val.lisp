@@ -50,10 +50,7 @@
 (define-wasm-object-class val)
 
 (defun make-wasm-val (lisp-val kind-or-key &key owner)
-  (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-val-struct)))
-	 (wasm-val (enable-gc (make-instance 'wasm-val
-					     :pointer pointer
-					     :owner owner))))
+  (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-val-struct))))
     (wasm-val-init pointer
 		   (typecase kind-or-key
 		     (keyword
@@ -61,7 +58,10 @@
 		     (t
 		      kind-or-key))
 		   lisp-val)
-    wasm-val))
+    (enable-gc (make-instance 'wasm-val
+			      :pointer pointer
+			      :owner owner
+			      :delete-function #'cffi:foreign-free))))
 
 (defun wasm-val-kind (wasm-val)
   (unless (null? (pointer wasm-val))
@@ -92,9 +92,10 @@
 (defun wasm-val-copy (wasm-val)
   (let ((copy-pointer (cffi:foreign-alloc '(:struct %wasm-val-struct))))
     (%wasm-val-copy copy-pointer wasm-val)
-    (wrap-wasm-val copy-pointer)))
+    (make-instance 'wasm-val
+		   :pointer copy-pointer
+		   :delete-function (then-free #'%wasm-val-delete))))
 			      
-
 ;; TODO: Translate more types
 (defun lisp-to-wasm-valkind (lisp-val)
   (etypecase lisp-val

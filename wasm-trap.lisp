@@ -42,7 +42,9 @@
   "TRAP-TRACE returns the trace of the WebAssembly frames for this trap."
   (let ((pointer (cffi:foreign-alloc '(:struct %wasm-frame-vec-struct))))
     (%wasm-trap-trace trap pointer)
-    (wrap-wasm-frame-vec pointer)))
+    (make-instance 'wasm-frame-vec
+		   :pointer pointer
+		   :delete-function (then-free #'%wasm-frame-vec-delete))))
 
 (define-condition wasm-trap-error (error)
   ((message :initarg :message

@@ -81,7 +81,8 @@
 	 (pointer (cffi:foreign-alloc '(:struct %wasm-extern-vec-struct)))
 	 (exports (make-instance 'wasm-instance-exports
 				 :pointer pointer
-				 :parent instance)))
+				 :parent instance
+				 :delete-function (then-free #'%wasm-extern-vec-delete))))
     (%wasm-instance-exports instance exports)
     (enable-gc exports)
     (setf (slot-value exports 'export-alist)

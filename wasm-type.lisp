@@ -26,7 +26,9 @@
 	  min
 	  (cffi:foreign-slot-value pointer '(:struct %wasm-limits-struct) 'max)
 	  max)
-    (enable-gc (make-instance 'wasm-limits :pointer pointer))))
+    (enable-gc (make-instance 'wasm-limits
+			      :pointer pointer
+			      :delete-function #'cffi:foreign-free))))
 
 (defun wrap-wasm-limits (pointer &key owner)
   (enable-gc (make-instance 'wasm-limits :pointer pointer :owner owner)))

@@ -33,7 +33,8 @@
   (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-importtype-vec-struct)))
 	 (imports (make-instance 'wasm-module-imports
 				 :pointer pointer
-				 :parent module)))
+				 :parent module
+				 :delete-function (then-free #'%wasm-importtype-vec-delete))))
     (%wasm-module-imports module imports)
     (enable-gc imports)
     (setf (slot-value imports 'imports-list)
@@ -48,7 +49,8 @@
   (let* ((pointer (cffi:foreign-alloc '(:struct %wasm-exporttype-vec-struct)))
 	 (exports (make-instance 'wasm-module-exports
 				 :pointer pointer
-				 :parent module)))
+				 :parent module
+				 :delete-function (then-free #'%wasm-exporttype-vec-delete))))
     (%wasm-module-exports module exports)
     (enable-gc exports)
     (setf (slot-value exports 'exports-list)

@@ -126,4 +126,8 @@
 (defmethod wasm-delete ((object wasm-object))
     (prog1 nil
       (dispose object)))
-  
+
+(defun then-free (delete-function)
+  (lambda (pointer)
+    (funcall delete-function pointer)
+    (cffi:foreign-free pointer)))

@@ -216,10 +216,11 @@
 			 elm
 			 :owner vec)))
 
-(defun make-wasm-vec-instance (class-name type &key owner)
+(defun make-wasm-vec-instance (class-name type delete-function &key owner)
   (enable-gc (make-instance class-name
 			    :pointer (cffi:foreign-alloc type)
-			    :owner owner)))
+			    :owner owner
+			    :delete-function (then-free delete-function))))
 
 (defun wrap-wasm-vec (class-name pointer &key owner)
   (enable-gc (make-instance class-name
@@ -239,29 +240,44 @@
 	 (new-name (translate-wasm-name (format-wasm-cfun-name vec-name "new")))
 	 (wrap-name (alexandria:symbolicate 'wrap-wasm- vec-name))
 	 (copy-name (alexandria:symbolicate 'wasm- vec-name '-copy))
-	 (copy-cfun-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy"))))
+	 (copy-cfun-name (translate-wasm-name (format-wasm-cfun-name vec-name "copy")))
+	 (delete-name (translate-wasm-name (format-wasm-cfun-name vec-name "delete"))))
     `(progn
        ;; MAKE-...-EMPTY
        (defun ,make-empty-name (&key owner)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
+	 (let ((vec (make-wasm-vec-instance ',class-name
+					    '(:struct ,struct-type-sym)
+					    (symbol-function ',delete-name)
+					    :owner owner)))
 	   (,new-empty-name vec)
 	   vec))
        ;; MAKE-...-UNINITIALIZED
        (defun ,make-uninitialized-name (size &key owner)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
+	 (let ((vec (make-wasm-vec-instance ',class-name
+					    '(:struct ,struct-type-sym)
+					    (symbol-function ',delete-name)
+					    :owner owner)))
 	   (,new-uninitialized-name vec size)
 	   vec))
        ;; MAKE-...
        (defun ,make-name (size init-data &key owner)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
+	 (let ((vec (make-wasm-vec-instance ',class-name
+					    '(:struct ,struct-type-sym)
+					    (symbol-function ',delete-name)
+					    :owner owner)))
 	   (,new-name vec size init-data)
 	   vec))
        ;; WRAP-...
        (defun ,wrap-name (pointer &key owner)
-	 (wrap-wasm-vec ',class-name pointer :owner owner))
+	 (enable-gc (make-instance ',class-name
+				   :pointer pointer
+				   :owner owner)))
        ;; COPY-...
        (defun ,copy-name (src &key owner)
-	 (let ((vec (make-wasm-vec-instance ',class-name '(:struct ,struct-type-sym) :owner owner)))
+	 (let ((vec (make-wasm-vec-instance ',class-name
+					    '(:struct ,struct-type-sym)
+					    (symbol-function ',delete-name)
+					    :owner owner)))
 	   (,copy-cfun-name vec src)
 	   vec))
        (define-wasm-object-class ,vec-name
