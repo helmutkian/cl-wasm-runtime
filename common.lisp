@@ -1,7 +1,12 @@
 (in-package #:cl-wasm-runtime)
 
+(pushnew (merge-pathnames #p".wasmer/lib/" (user-homedir-pathname))
+	 cffi:*foreign-library-directories*
+	 :test #'equal)
+
 (cffi:define-foreign-library libwasmer
-  (:darwin (:or "shared/libwasmer/lib/libwasmer.dylib")))
+    (:darwin (:or "libwasmer.dylib"))
+  (:unix (:or "libwasmer.so")))
 
 (cffi:use-foreign-library libwasmer)
 
