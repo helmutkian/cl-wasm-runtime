@@ -83,7 +83,7 @@
 		   (type $start_t (func))
 		   (func $start_f (type $start_t) unreachable))")
 	   (module (wat-to-wasm-module store wat)))
-      ;; It's not possible to access the actual WASM trap object
-      ;; with the common WASM C API. Need to use engine-specific API.
-      ;; The common WASM C API will just signal a generic foreign trap.
-      (5am:signals t (make-wasm-instance store module)))))
+      (handler-case (make-wasm-instance store module)
+	(wasm-trap-error (c)
+	  (5am:is (string= "unreachable" (wasm-trap-error-message c))))))))
+

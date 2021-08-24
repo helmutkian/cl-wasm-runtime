@@ -106,17 +106,27 @@
 (defmethod exports ((instance wasm-instance))
   (slot-value instance 'exports))
 
-(defun make-wasm-instance (store module  &optional imports traps)
-  (let ((instance (enable-gc
-		   (make-instance 'wasm-instance
-				  :pointer (%wasm-instance-new store
-							       module
-							       (or imports (make-wasm-imports module))
-							       (if (null? traps) (cffi:null-pointer) traps))
-				  :parent store
-				  :module module))))
-    (when traps
-      (setf (owner traps) instance))
-    (setf (slot-value instance 'exports)
-	  (make-wasm-instance-exports instance))
-    instance))
+(defun make-wasm-instance (store module &optional imports)
+  (cffi:with-foreign-object (trap-pointer '%wasm-trap-type)
+    (let* ((instance-imports (or imports (make-wasm-imports module)))
+	   (pointer (%wasm-instance-new store
+					module
+					instance-imports
+					trap-pointer))
+	   (instance (enable-gc
+		      (make-instance 'wasm-instance
+				     :pointer pointer
+				     :parent store
+				     :module module))))
+      (when (and (null? instance))
+	(if (and  (not (null? trap-pointer))
+		  (not (null? (cffi:mem-aref trap-pointer '%wasm-trap-type)))) 
+	    (let ((trap (cffi:mem-aref trap-pointer '%wasm-trap-type)))
+	      (error 'wasm-trap-error
+		     :trace (trap-trace trap)
+		     :origin (origin trap)
+		     :message (message trap)))
+	    (error "error creating module instance")))
+      (setf (slot-value instance 'exports)
+	    (make-wasm-instance-exports instance))
+      instance)))
