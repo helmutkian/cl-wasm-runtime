@@ -115,10 +115,10 @@
 			do (%wasm-val-copy (cffi:mem-aptr data '(:struct %wasm-val-struct) i) result))
 		  (cffi:null-pointer)))
 	    (t (c)
-	      (make-wasm-trap (host-function-store host-function)
+	      (%wasm-trap-new (host-function-store host-function)
 			      (to-wasm-trap-message c)))))
     (t (c)
-      (make-wasm-trap store
+      (%wasm-trap-new store
 		      (to-wasm-trap-message c))))))
       
 (cffi:defcallback function-trampoline %wasm-trap-type
@@ -212,10 +212,11 @@
 	     (%wasm-val-vec-new-uninitialized results num-results)
 	     (let ((trap (%wasm-func-call func args results)))
 	       (unless (null? trap)
-		 (error 'wasm-trap-error
-			:message (message trap)
-			:origin (origin trap)
-			:trace (trap-trace trap)))
+		 (unwind-protect  (error 'wasm-trap-error
+					 :message (message trap)
+					 :origin (origin trap)
+					 :trace (trap-trace trap))
+		   (%wasm-trap-delete trap)))
 	       (loop for i below num-results
 		     collect (wasm-val-type-value (wasm-vec-aptr results
 								 '(:struct %wasm-val-vec-struct)
