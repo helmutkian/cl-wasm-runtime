@@ -94,7 +94,7 @@
     (%wasm-val-copy copy-pointer wasm-val)
     (make-instance 'wasm-val
 		   :pointer copy-pointer
-		   :delete-function (then-free #'%wasm-val-delete))))
+		   :delete-function #'cffi:foreign-free)))
 			      
 ;; TODO: Translate more types
 (defun lisp-to-wasm-valkind (lisp-val)
