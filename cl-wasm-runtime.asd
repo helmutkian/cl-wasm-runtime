@@ -1,3 +1,6 @@
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (asdf:oos 'asdf:load-op :cffi-grovel))
+
 (asdf:defsystem "cl-wasm-runtime"
   :depends-on ("cffi"
 	       "trivial-garbage"
@@ -8,7 +11,7 @@
 	       "babel"
 	       "bordeaux-threads")
   :components ((:file "package")
-	       
+	       (cffi-grovel:grovel-file "grovel")
 	       (:file "rwlock"
 		:depends-on ("package"))
 	       
@@ -17,7 +20,8 @@
 	       
 	       (:file "common"
 		:depends-on ("package"
-			      "wasm-object"))
+			     "wasm-object"
+			     "grovel"))
 	       
 	       (:file "runtime"
 		:depends-on ("package"

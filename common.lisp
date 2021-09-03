@@ -56,11 +56,6 @@
 
 ;;; COMMON
 
-;; TODO: Move these to groveler
-(cffi:defctype %size-type :uint)
-
-(cffi:defctype %uint-32-type :uint32)
-
 (cffi:defctype %float-32-type :float)
 
 (cffi:defctype %float-64-type :double)
