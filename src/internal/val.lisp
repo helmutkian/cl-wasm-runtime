@@ -11,7 +11,6 @@
 		#:unsigned-to-signed
 		#:safe-bind)
   (:import-from #:cl-wasm-runtime.internal/conditions)
-  (:import-from #:cl-wasm-runtime.internal/generic)
   (:export #:wasm-val
 	   #:wasm-val-vec
 	   #:val-kind

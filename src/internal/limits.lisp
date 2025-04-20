@@ -7,7 +7,6 @@
   (:import-from #:cl-wasm-runtime.internal/wasm-ffi)
   (:import-from #:cl-wasm-runtime.prelude/util
 		#:safe-bind)
-  (:import-from #:cl-wasm-runtime.internal/generic)
   (:export #:wasm-pages
 	   #:+wasm-page-size+
 	   #:+max-wasm-pages+
