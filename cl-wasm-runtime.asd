@@ -8,7 +8,7 @@
 	       #:cl-wasm-runtime.prelude/ffi-type
 	       #:cl-wasm-runtime.prelude/ffi-prelude))
 
-(asdf:defsystem #:cl-wasm-runtime.wasmer
+(asdf:defsystem #:cl-wasm-runtime.wasmer-ffi
   :defsystem-depends-on (:cffi/c2ffi)
   :depends-on (#:cffi #:cffi/c2ffi #:cl-ppcre #:alexandria #:cl-wasm-runtime.prelude)
   :components
@@ -19,8 +19,8 @@
      :components
      ((:cffi/c2ffi-file "wasmer.h"
        :c2ffi-executable "/home/hk/Development/c2ffi/build/bin/c2ffi"
-       :package #:cl-wasm-runtime.wasmer/libwasmer
-       :foreign-library-name "cl-wasm-runtime.wasmer/libwasmer::libwasmer"
+       :package #:cl-wasm-runtime.wasmer-ffi/libwasmer
+       :foreign-library-name "cl-wasm-runtime.wasmer-ffi/libwasmer::libwasmer"
        :include-sources ("bits/types\\.h$"
 			 "bits/stdint.*\\.h"
 			 "stdint\\.h$")
@@ -32,9 +32,9 @@
 			     "^wasi"
 			     "^wat2wasm$")
        :exclude-sources :all
-       :ffi-name-transformer "cl-wasm-runtime.wasmer/prelude/ffi-prelude:ffi-name-transformer"
-       :ffi-name-export-predicate "cl-wasm-runtime.wasmer/prelude/ffi-prelude:ffi-name-export-predicate"
-       :ffi-type-transformer "cl-wasm-runtime.wasmer/prelude/ffi-prelude:ffi-type-transformer"
+       :ffi-name-transformer "cl-wasm-runtime.wasmer-ffi/prelude:ffi-name-transformer"
+       :ffi-name-export-predicate "cl-wasm-runtime.wasmer-ffi/prelude:ffi-name-export-predicate"
+       :ffi-type-transformer "cl-wasm-runtime.wasmer-ffi/prelude:ffi-type-transformer"
        :foreign-library-spec ((:unix (:or "/home/hk/.wasmer/lib/libwasmer.so"))))))
    (:file "wasmer-ffi"
     :pathname "src/wasmer/wasmer-ffi"
@@ -90,6 +90,14 @@
 (asdf:defsystem #:cl-wasm-runtime
   :depends-on (#:cl-wasm-runtime.internal)
   :components ((:file "package" :pathname "src/package")))
+
+(asdf:defsystem #:cl-wasm-runtime.wasmer
+  :class :package-inferred-system
+  :defsystem-depends-on (:asdf-package-system)
+  :pathname "src/wasmer"
+  :depends-on (#:cl-wasm-runtime.wasmer-ffi
+	       #:cl-wasm-runtime
+	       #:cl-wasm-runtime.wasmer/wat2wasm))
 
 (asdf:defsystem #:cl-wasm-runtime.test
   :class :package-inferred-system

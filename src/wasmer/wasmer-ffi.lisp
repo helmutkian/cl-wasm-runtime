@@ -1,6 +1,6 @@
-(uiop:define-package #:cl-wasm-runtime.wasmer
+(uiop:define-package #:cl-wasm-runtime.wasmer-ffi
   (:import-from #:cffi)
-  (:use-reexport #:cl-wasm-runtime.wasmer/libwasmer)
+  (:use-reexport #:cl-wasm-runtime.wasmer-ffi/libwasmer)
   (:shadow #:wasm-extern-as-func-const
 	   #:wasm-extern-as-global-const
 	   #:wasm-extern-as-table-const
@@ -10,7 +10,7 @@
 	   #:wasm-extern-as-table-const
 	   #:wasm-extern-as-memory-const))
 
-(cl:in-package #:cl-wasm-runtime.wasmer)
+(cl:in-package #:cl-wasm-runtime.wasmer-ffi)
 
 ;;; Wasmer does not currently define these functions
 

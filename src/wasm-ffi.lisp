@@ -6,7 +6,7 @@
 		#:process-slots
 		#:process-supers)
   (:use-reexport #:cl-wasm-runtime.prelude/ffi-type)
-  #+wasmer(:use-reexport #:cl-wasm-runtime.wasmer)
+  #+wasmer(:use-reexport #:cl-wasm-runtime.wasmer-ffi)
   (:export #:wasm-val-of
 	   #:wasm-val-t
 	   #:wasm-name-t
