@@ -1,7 +1,7 @@
 (asdf:defsystem #:cl-wasm-runtime.prelude
   :class :package-inferred-system 
   :defsystem-depends-on (:asdf-package-system)
-  :pathname "src"
+  :pathname "src/prelude"
   :depends-on (#:cffi
 	       #:alexandria
 	       #:cl-wasm-runtime.prelude/util
@@ -43,7 +43,7 @@
 (asdf:defsystem #:cl-wasm-runtime.internal
   :class :package-inferred-system 
   :defsystem-depends-on (:asdf-package-system)
-  :pathname "src" 
+  :pathname "src/internal" 
   :depends-on (;; 3rd party dependencies, listed here for bookkeeping
 	       #:alexandria
 	       #:trivial-garbage
